@@ -1,0 +1,128 @@
+/* style.css */
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #f4f4f4;
+    text-align: center; /* 전체 콘텐츠 중앙 정렬 */
+}
+
+h1 {
+    color: #333;
+    margin-bottom: 30px;
+}
+
+/* 메인 화면 레이아웃 */
+#main-screen {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 주제 버튼 컨테이너 */
+#subject-buttons {
+    display: flex;
+    flex-wrap: wrap; /* 버튼이 많으면 다음 줄로 넘어가도록 */
+    justify-content: center;
+    gap: 10px; /* 버튼 사이 간격 */
+    margin-bottom: 20px;
+}
+
+/* 모든 버튼 스타일 */
+button {
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    border: none;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+}
+
+/* 주제 버튼 스타일 */
+.subject-btn {
+    background-color: #4CAF50; /* 녹색 */
+    color: white;
+}
+
+.subject-btn:hover {
+    background-color: #45a049;
+}
+
+/* 난이도 버튼 스타일 */
+#difficulty-selection h2 {
+    margin-top: 30px;
+    color: #555;
+}
+
+.difficulty-btn {
+    background-color: #007bff; /* 파란색 */
+    color: white;
+    margin: 5px;
+}
+
+.difficulty-btn:hover {
+    background-color: #0056b3;
+}
+
+/* 문제 풀이 화면 스타일 */
+#quiz-screen {
+    max-width: 1000px;
+    margin: 0 auto;
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+#problem-image {
+    max-width: 100%;
+    height: auto;
+    border: 1px solid #ddd;
+    margin-bottom: 20px;
+}
+
+/* 필기 캔버스 영역 */
+#writing-canvas {
+    border: 2px solid #333;
+    background-color: #fff;
+    cursor: crosshair; /* 펜 모양 커서 */
+    /* 캔버스 크기는 나중에 JavaScript에서 설정하는 것이 좋습니다. */
+    width: 100%;
+    height: 400px;
+}
+
+/* style.css에 추가할 내용 */
+
+/* 드로잉 도구 영역 스타일 */
+#drawing-tools {
+    margin-top: 15px;
+    padding: 10px;
+    border-top: 1px solid #ddd;
+}
+
+/* 도구 버튼 공통 스타일 */
+.tool-btn {
+    padding: 8px 15px;
+    font-size: 14px;
+    margin: 3px;
+    background-color: #e9e9e9;
+    color: #333;
+    border: 1px solid #ccc;
+}
+
+/* 선택된 도구 버튼 스타일 */
+.tool-btn.selected {
+    background-color: #333;
+    color: white;
+    border-color: #333;
+}
+
+/* 전체 지우기 버튼 강조 */
+#clear-btn {
+    background-color: #dc3545; /* 빨간색 계열 */
+    color: white;
+}

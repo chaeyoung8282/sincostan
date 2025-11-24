@@ -1,0 +1,53 @@
+<body>
+
+    <div id="main-screen">
+        <h1>스트릿 매쓰 파이터</h1>
+
+        <div id="subject-buttons">
+            <button class="subject-btn" data-subject="polynomial">다항식</button>
+            <button class="subject-btn" data-subject="equation">방정식</button>
+            <button class="subject-btn" data-subject="inequality">부등식</button>
+            <button class="subject-btn" data-subject="permutation">순열과 조합</button>
+            <button class="subject-btn" data-subject="matrix">행렬</button>
+            <button class="subject-btn" data-subject="geometry">도형의 방정식</button>
+            <button class="subject-btn" data-subject="set">집합과 명제</button>
+            <button class="subject-btn" data-subject="function">함수와 그래프</button>
+        </div>
+
+        <div id="difficulty-selection" style="display: none;">
+            <h2>난이도 선택</h2>
+            <button class="difficulty-btn" data-difficulty="hard">상</button>
+            <button class="difficulty-btn" data-difficulty="medium">중</button>
+            <button class="difficulty-btn" data-difficulty="easy">하</button>
+        </div>
+    </div>
+
+    <div id="quiz-screen" style="display: none;">
+        <div id="problem-area">
+            <h2>문제</h2>
+            <img id="problem-image" src="" alt="수학 문제 이미지">
+        </div>
+
+        <div id="writing-area">
+            <h2>풀이 공간 (필기 영역)</h2>
+
+        </div>
+
+      <canvas id="writing-canvas"></canvas>
+<p>※ 태블릿 필기는 이 캔버스에 실시간으로 반영됩니다.</p>
+
+<div id="drawing-tools">
+    <h3>드로잉 도구</h3>
+    <button id="pen-black-btn" class="tool-btn selected" data-color="#000000" data-mode="pen">⚫️ 검정 펜</button>
+    <button id="pen-red-btn" class="tool-btn" data-color="#ff0000" data-mode="pen">🔴 빨간 펜</button>
+    <button id="eraser-btn" class="tool-btn" data-mode="eraser">🧽 지우개</button>
+    <button id="clear-btn" class="tool-btn">전체 지우기</button>
+</div>
+
+<button id="back-to-main">메인으로 돌아가기</button>
+
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
