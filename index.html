@@ -7,34 +7,47 @@
 <body>
 
     <div id="main-screen">
-        <h1>STREET MATH FIGHTER</h1>
+    <h1 class="pixel-title">스트릿 매쓰 파이터</h1>
+    <h2 class="subtitle">난이도별 수학 문제 챌린지 !!!!</h2>
 
-        <div class="subject-group">
-            <h2>공통수학 1: 기본 기술 (Basic Techniques)</h2>
-            <div id="subject-buttons-group-1">
-                <button class="subject-btn" data-subject="polynomial">다항식</button>
-                <button class="subject-btn" data-subject="equation">방정식과 부등식</button>
-                <button class="subject-btn" data-subject="permutation">순열과 조합</button>
-                <button class="subject-btn" data-subject="matrix">행렬</button>
-            </div>
-        </div>
+    <div id="game-ui-bar">
+        <span class="coin">🪙</span>
+        <span class="coin">🪙</span>
+        <span class="coin">🪙</span>
+        <span id="life-bar-container">
+            LIFE : 
+            <span class="heart-pixel">❤️</span>
+            <span class="heart-pixel">❤️</span>
+            <span class="heart-pixel">❤️</span>
+        </span>
+    </div>
 
-        <div class="subject-group">
-            <h2>공통수학 2: 고급 기술 (Advanced Techniques)</h2>
-            <div id="subject-buttons-group-2">
-                <button class="subject-btn" data-subject="geometry">도형의 방정식</button>
-                <button class="subject-btn" data-subject="set">집합과 명제</button>
-                <button class="subject-btn" data-subject="function">함수와 그래프</button>
-                <button class="subject-btn" data-subject="calculus">미적분</button> </div>
-            </div>
-
-        <div id="difficulty-selection" style="display: none;">
-            <h2>난이도 선택 - 배틀 레벨</h2>
-            <button class="difficulty-btn" data-difficulty="hard">상 (HARD)</button>
-            <button class="difficulty-btn" data-difficulty="medium">중 (MEDIUM)</button>
-            <button class="difficulty-btn" data-difficulty="easy">하 (EASY)</button>
+    <div class="subject-group">
+        <h2>⚔️ 공통수학 1 : BASIC STAGE</h2>
+        <div id="subject-buttons-group-1">
+            <button class="pixel-btn subject-btn" data-subject="polynomial">다항식</button>
+            <button class="pixel-btn subject-btn" data-subject="equation">방정식과 부등식</button>
+            <button class="pixel-btn subject-btn" data-subject="permutation">순열과 조합</button>
+            <button class="pixel-btn subject-btn" data-subject="matrix">행렬</button>
         </div>
     </div>
+
+    <div class="subject-group">
+        <h2>🛡️ 공통수학 2 : ADVANCED STAGE</h2>
+        <div id="subject-buttons-group-2">
+            <button class="pixel-btn subject-btn" data-subject="geometry">도형의 방정식</button>
+            <button class="pixel-btn subject-btn" data-subject="set">집합과 명제</button>
+            <button class="pixel-btn subject-btn" data-subject="function">함수와 그래프</button>
+            </div>
+    </div>
+
+    <div id="difficulty-selection" style="display: none;">
+        <h2 class="pixel-title">난이도 선택 !</h2>
+        <button class="pixel-btn difficulty-btn" data-difficulty="hard">상 : BOSS</button>
+        <button class="pixel-btn difficulty-btn" data-difficulty="medium">중 : CHALLENGE</button>
+        <button class="pixel-btn difficulty-btn" data-difficulty="easy">하 : TRAINING</button>
+    </div>
+</div>
 
     <div id="quiz-screen" style="display: none;">
         <div id="problem-area">
