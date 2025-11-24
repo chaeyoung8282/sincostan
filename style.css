@@ -1,128 +1,129 @@
-/* style.css */
-
 body {
-    font-family: Arial, sans-serif;
+    font-family: 'Arial Black', sans-serif; /* 강렬한 글꼴 */
     margin: 0;
-    padding: 20px;
-    background-color: #f4f4f4;
-    text-align: center; /* 전체 콘텐츠 중앙 정렬 */
+    padding: 0;
+    background-color: #1a1a1a; /* 어두운 배경 */
+    color: white; /* 흰색 글자 */
+    text-align: center;
 }
 
 h1 {
-    color: #333;
-    margin-bottom: 30px;
+    color: #ff0000; /* 강렬한 빨간색 제목 */
+    text-shadow: 2px 2px 4px #000;
+    margin-top: 50px;
+    font-size: 3em;
 }
 
-/* 메인 화면 레이아웃 */
-#main-screen {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 20px;
-    background-color: #fff;
+/* 메인 및 퀴즈 화면 레이아웃 컨테이너 */
+#main-screen, #quiz-screen {
+    max-width: 1000px;
+    margin: 30px auto;
+    padding: 25px;
+    background: linear-gradient(145deg, #333333, #111111); /* 그라데이션 배경 */
+    border: 5px solid #ff0000; /* 빨간색 테두리 */
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(255, 0, 0, 0.5); /* 빛나는 효과 */
+}
+
+/* --- 영역 분류 섹션 스타일 --- */
+.subject-group {
+    margin-bottom: 25px;
+    padding: 15px;
+    border: 2px dashed #4CAF50; /* 녹색 점선 테두리 */
     border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    background-color: rgba(0, 0, 0, 0.3); /* 반투명 배경 */
 }
 
-/* 주제 버튼 컨테이너 */
-#subject-buttons {
-    display: flex;
-    flex-wrap: wrap; /* 버튼이 많으면 다음 줄로 넘어가도록 */
-    justify-content: center;
-    gap: 10px; /* 버튼 사이 간격 */
+.subject-group h2 {
+    color: #4CAF50; /* 그룹 제목 색상 */
+    font-size: 1.8em;
+    margin-bottom: 15px;
+    text-shadow: 1px 1px 2px #000;
+}
+
+/* --- 버튼 스타일 --- */
+.subject-btn, .difficulty-btn, #back-to-main, .tool-btn {
+    /* 펀치 버튼 느낌 */
+    padding: 12px 25px;
+    font-size: 1.1em;
+    cursor: pointer;
+    border: 3px solid #000;
+    border-radius: 5px;
+    transition: all 0.2s;
+    margin: 8px;
+    text-transform: uppercase;
+    font-weight: bold;
+    box-shadow: 0 5px 0 #000; /* 3D 효과 */
+}
+
+/* 주제 버튼 (선택 영역) */
+.subject-btn { 
+    background-color: #007bff; 
+    color: white; 
+}
+.subject-btn:hover { 
+    background-color: #0056b3; 
+    box-shadow: 0 2px 0 #000; 
+    transform: translateY(3px); /* 눌리는 효과 */
+}
+
+/* 난이도 버튼 */
+#difficulty-selection h2 {
+    color: #ffd700; /* 금색 */
+    margin-top: 30px;
+}
+.difficulty-btn { 
+    background-color: #ffd700; 
+    color: #333; 
+    border-color: #a08c00;
+}
+.difficulty-btn:hover { 
+    background-color: #e0b400; 
+    box-shadow: 0 2px 0 #a08c00; 
+    transform: translateY(3px);
+}
+
+/* 캔버스 및 필기 영역 */
+#problem-area {
     margin-bottom: 20px;
 }
-
-/* 모든 버튼 스타일 */
-button {
-    padding: 10px 20px;
-    font-size: 16px;
-    cursor: pointer;
-    border: none;
-    border-radius: 5px;
-    transition: background-color 0.3s;
-}
-
-/* 주제 버튼 스타일 */
-.subject-btn {
-    background-color: #4CAF50; /* 녹색 */
-    color: white;
-}
-
-.subject-btn:hover {
-    background-color: #45a049;
-}
-
-/* 난이도 버튼 스타일 */
-#difficulty-selection h2 {
-    margin-top: 30px;
-    color: #555;
-}
-
-.difficulty-btn {
-    background-color: #007bff; /* 파란색 */
-    color: white;
-    margin: 5px;
-}
-
-.difficulty-btn:hover {
-    background-color: #0056b3;
-}
-
-/* 문제 풀이 화면 스타일 */
-#quiz-screen {
-    max-width: 1000px;
-    margin: 0 auto;
-    background-color: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
 #problem-image {
     max-width: 100%;
     height: auto;
-    border: 1px solid #ddd;
-    margin-bottom: 20px;
-}
-
-/* 필기 캔버스 영역 */
-#writing-canvas {
-    border: 2px solid #333;
+    border: 3px solid #ffd700; /* 금색 테두리 */
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
     background-color: #fff;
-    cursor: crosshair; /* 펜 모양 커서 */
-    /* 캔버스 크기는 나중에 JavaScript에서 설정하는 것이 좋습니다. */
-    width: 100%;
+}
+
+#writing-canvas {
+    width: 800px;
     height: 400px;
+    border: 5px solid #4CAF50; /* 녹색 테두리 */
+    background-color: #ffffff;
+    cursor: crosshair;
 }
 
-/* style.css에 추가할 내용 */
-
-/* 드로잉 도구 영역 스타일 */
-#drawing-tools {
-    margin-top: 15px;
-    padding: 10px;
-    border-top: 1px solid #ddd;
-}
-
-/* 도구 버튼 공통 스타일 */
+/* 도구 선택 */
+#drawing-tools h3 { color: #fff; }
 .tool-btn {
-    padding: 8px 15px;
-    font-size: 14px;
-    margin: 3px;
-    background-color: #e9e9e9;
-    color: #333;
-    border: 1px solid #ccc;
-}
-
-/* 선택된 도구 버튼 스타일 */
-.tool-btn.selected {
-    background-color: #333;
-    color: white;
+    background-color: #555;
+    color: #fff;
     border-color: #333;
 }
-
-/* 전체 지우기 버튼 강조 */
+.tool-btn.selected {
+    background-color: #ff0000; /* 선택된 도구는 빨간색 */
+    border-color: #a00000;
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.7);
+}
 #clear-btn {
-    background-color: #dc3545; /* 빨간색 계열 */
+    background-color: #dc3545;
     color: white;
+    border-color: #9a2531;
+}
+
+/* 메인으로 돌아가기 버튼 */
+#back-to-main {
+    background-color: #888;
+    color: white;
+    margin-top: 20px;
 }
