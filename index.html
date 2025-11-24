@@ -50,15 +50,41 @@
 </div>
 
     <div id="quiz-screen" style="display: none;">
-        <div id="problem-area">
-            <h2>문제</h2>
-            <img id="problem-image" src="" alt="수학 문제 이미지">
+    <div id="problem-area">
+        <h2 class="pixel-title">문제 : <span id="current-subject-difficulty"></span></h2>
+        <img id="problem-image" src="" alt="수학 문제 이미지">
+    </div>
+
+    <div id="solving-container">
+        
+        <div class="player-writing-area">
+            <h3>P1: 나의 풀이 공간</h3>
+            <canvas id="canvas-p1" class="writing-canvas"></canvas>
+            
+            <div class="drawing-tools">
+                <button class="tool-btn selected" data-color="#000000" data-mode="pen" data-player="p1">⚫️ P1 펜</button>
+                <button class="tool-btn" data-color="#ff0000" data-mode="pen" data-player="p1">🔴 P1 펜</button>
+                <button class="tool-btn" data-mode="eraser" data-player="p1">🧽 P1 지우개</button>
+                <button class="tool-btn clear-btn" data-player="p1">P1 전체 지우기</button>
+            </div>
         </div>
 
-        <div id="writing-area">
-            <h2>풀이 공간 (필기 영역)</h2>
-
+        <div class="player-writing-area">
+            <h3>P2: 동료의 풀이 공간</h3>
+            <canvas id="canvas-p2" class="writing-canvas"></canvas>
+            
+            <div class="drawing-tools">
+                <button class="tool-btn selected" data-color="#000000" data-mode="pen" data-player="p2">⚫️ P2 펜</button>
+                <button class="tool-btn" data-color="#0000ff" data-mode="pen" data-player="p2">🔵 P2 펜</button>
+                <button class="tool-btn" data-mode="eraser" data-player="p2">🧽 P2 지우개</button>
+                <button class="tool-btn clear-btn" data-player="p2">P2 전체 지우기</button>
+            </div>
         </div>
+        
+    </div>
+    
+    <button id="back-to-main" class="pixel-btn">메인으로 돌아가기</button>
+</div>
 
       <canvas id="writing-canvas"></canvas>
 <p>※ 태블릿 필기는 이 캔버스에 실시간으로 반영됩니다.</p>
