@@ -197,19 +197,33 @@ difficultyButtons.forEach(button => {
     });
 });
 
-// C. 퀴즈 시작 및 화면 전환 함수
+// C. 퀴즈 시작 및 화면 전환 함수 수정 (약 190번째 줄 근처)
 function startQuiz(subject, difficulty) {
-    mainScreen.style.display = 'none';
-    quizScreen.style.display = 'block';
-
-    // 임시 문제 이미지 설정 (실제로는 서버에서 경로를 가져와야 함)
-    problemImage.src = `placeholder-${subject}-${difficulty}.png`;
-
-    // 퀴즈 화면 진입 시 초기 펜 색상 및 모드 설정
-    toolButtons.forEach(btn => btn.classList.remove('selected'));
-    document.getElementById('pen-black-btn').classList.add('selected'); // 검정 펜 기본 선택
-    currentMode = 'pen';
-    currentColor = '#000000';
+    // 1. 서버의 새 문제 API 경로로 요청 (예: /api/quiz/polynomial/easy)
+    fetch(`/api/quiz/${subject}/${difficulty}`)
+        .then(response => response.json())
+        .then(problemData => {
+            // API에서 에러 메시지가 온 경우 처리
+            if (problemData.error) {
+                alert(problemData.error);
+                return;
+            }
+            
+            // 2. 요청 성공 시 화면 전환 및 문제 이미지 URL 로드
+            mainScreen.style.display = 'none';
+            quizScreen.style.display = 'block';
+            
+            // 💡 서버에서 받은 문제의 URL로 이미지 소스를 설정합니다.
+            problemImage.src = problemData.url; 
+            
+            // 3. 캔버스 초기화 및 기본 펜 설정
+            clearCanvas();
+            document.getElementById('pen-black-btn').click(); 
+        })
+        .catch(error => {
+            console.error('문제 로드 중 오류 발생:', error);
+            alert('문제 로드에 실패했습니다. 서버 상태를 확인해주세요.');
+        });
 }
 
 // D. 메인 화면으로 돌아가기 버튼
