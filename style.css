@@ -154,3 +154,45 @@ body {
     color: white;
     margin-top: 20px;
 }
+
+/* --- 1. 풀이 공간 전체 컨테이너 설정 --- */
+#solving-container {
+    display: flex; /* 자식 요소들을 가로로 나열 */
+    justify-content: space-between; /* 양쪽 끝으로 벌리기 */
+    gap: 20px; /* 캔버스 사이 간격 */
+    margin: 30px 0;
+}
+
+/* --- 2. 각 플레이어의 풀이 영역 (50% 폭) --- */
+.player-writing-area {
+    flex: 1; /* 가로 공간을 균등하게 차지 */
+    min-width: 450px; /* 최소 너비 설정으로 영역 크기 확보 */
+    border: 3px solid #ffd700;
+    padding: 10px;
+}
+
+.player-writing-area h3 {
+    color: #00ff00;
+    margin-bottom: 10px;
+}
+
+/* --- 3. 캔버스 크기 조정 (핵심!) --- */
+.writing-canvas {
+    /* CSS 크기를 크게 설정 (내부 해상도는 JS에서 설정) */
+    width: 100%; 
+    height: 450px; /* 세로 크기를 확보하여 크게 보이도록 함 */
+    border: 4px solid #ffaa00; 
+    background-color: #ffffff;
+    cursor: crosshair;
+}
+
+/* --- 4. 도구 영역 스타일 --- */
+.drawing-tools {
+    margin-top: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/* 캔버스가 2개이므로, 이전에 설정한 단일 캔버스 스타일은 삭제하거나 .writing-canvas로 통합해야 합니다. */
+/* 예를 들어, 기존에 #writing-canvas로 정의했던 CSS 규칙은 .writing-canvas로 변경해야 합니다. */
