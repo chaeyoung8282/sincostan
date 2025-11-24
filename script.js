@@ -1,41 +1,170 @@
-// script.js 파일 맨 위에 추가
+// =======================================================
+// 1. WebSocket 및 환경 설정
+// =======================================================
 
-// 1. WebSocket 서버에 연결을 시도합니다.
-// 로컬에서 실행 시: ws://localhost:8080 
-// 실제 서버에 올릴 경우: wss://yourdomain.com
-const socket = new WebSocket('ws://localhost:8080');
+// 실제 서버에 올릴 경우 Render URL로 변경하세요. (예: wss://your-render-app.onrender.com)
+// 현재는 로컬 테스트용입니다.
+const RENDER_URL = window.location.host;
+const socket = new WebSocket(`wss://${RENDER_URL}`); 
 
 socket.onopen = () => {
-    console.log('WebSocket 서버에 연결되었습니다.');
+    console.log('🔗 WebSocket 서버에 연결되었습니다.');
 };
 
 socket.onerror = (error) => {
-    console.error('WebSocket 오류 발생:', error);
+    console.error('❌ WebSocket 오류 발생:', error);
 };
 
-// 2. 다른 클라이언트(선생님 등)로부터 필기 데이터를 수신했을 때
-socket.onmessage = (event) => {
-    try {
-        const data = JSON.parse(event.data);
-        if (data.type === 'draw') {
-            // 수신된 데이터를 이용해 캔버스에 선을 그립니다.
-            // (다른 사람의 펜 색상, 굵기 등도 data에 포함되어야 정확합니다.)
-            drawReceivedLine(data);
-        } else if (data.type === 'clear') {
-            // 전체 지우기 명령 수신
-            clearCanvas();
-        }
-    } catch (e) {
-        console.error("수신된 데이터 파싱 오류:", e);
+
+// =======================================================
+// 2. HTML 요소 및 캔버스 설정
+// =======================================================
+
+const subjectButtons = document.querySelectorAll('.subject-btn');
+const difficultySelection = document.getElementById('difficulty-selection');
+const mainScreen = document.getElementById('main-screen');
+const quizScreen = document.getElementById('quiz-screen');
+const problemImage = document.getElementById('problem-image');
+
+// 💡 P1/P2 캔버스 및 컨텍스트
+const canvasP1 = document.getElementById('canvas-p1');
+const ctxP1 = canvasP1.getContext('2d');
+const canvasP2 = document.getElementById('canvas-p2');
+const ctxP2 = canvasP2.getContext('2d');
+
+const toolButtons = document.querySelectorAll('.tool-btn');
+const clearButtons = document.querySelectorAll('.clear-btn'); 
+
+// 💡 상태 변수: P1과 P2 각각의 상태를 저장
+let playerState = {
+    'p1': {
+        isDrawing: false, lastX: 0, lastY: 0,
+        mode: 'pen', color: '#000000', 
+        canvas: canvasP1, ctx: ctxP1
+    },
+    'p2': {
+        isDrawing: false, lastX: 0, lastY: 0,
+        mode: 'pen', color: '#000000', 
+        canvas: canvasP2, ctx: ctxP2
     }
 };
 
-// 수신된 좌표를 캔버스에 그리는 함수 (별도 정의 필요)
+// 캔버스 해상도 설정 (CSS 크기에 맞춰 내부 해상도 설정)
+const CANVAS_WIDTH = 900; 
+const CANVAS_HEIGHT = 450;
+canvasP1.width = CANVAS_WIDTH; canvasP1.height = CANVAS_HEIGHT;
+canvasP2.width = CANVAS_WIDTH; canvasP2.height = CANVAS_HEIGHT;
+
+// 드로잉 기본 스타일 초기화
+[ctxP1, ctxP2].forEach(ctx => {
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.lineWidth = 4;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT); // 배경 흰색으로 초기화
+});
+
+// =======================================================
+// 3. 드로잉 및 좌표 계산 함수 (P1/P2 통합)
+// =======================================================
+
+// 캔버스 내 좌표 계산 (특정 캔버스에 맞춤)
+function getCanvasCoordinates(canvas, clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    const x = (clientX - rect.left) * scaleX;
+    const y = (clientY - rect.top) * scaleY;
+    return [x, y];
+}
+
+function startDrawing(e) {
+    // 💡 클릭/터치된 캔버스가 P1인지 P2인지 ID로 확인
+    const player = e.target.id === 'canvas-p1' ? 'p1' : 'p2';
+    const state = playerState[player];
+    
+    state.isDrawing = true;
+    
+    let clientX = e.clientX || (e.touches && e.touches[0].clientX);
+    let clientY = e.clientY || (e.touches && e.touches[0].clientY);
+    
+    [state.lastX, state.lastY] = getCanvasCoordinates(state.canvas, clientX, clientY);
+    
+    e.preventDefault(); 
+}
+
+function draw(e) {
+    // 💡 마우스가 이동 중인 캔버스 상태를 찾습니다.
+    const player = e.target.id === 'canvas-p1' ? 'p1' : 'p2';
+    const state = playerState[player];
+    
+    if (!state.isDrawing) return;
+
+    // 모드에 따른 펜/지우개 스타일 설정
+    const penColor = state.mode === 'pen' ? state.color : '#ffffff';
+    const penWidth = state.mode === 'pen' ? 4 : 20;
+    
+    state.ctx.strokeStyle = penColor;
+    state.ctx.lineWidth = penWidth;
+
+    let clientX = e.clientX || (e.touches && e.touches[0].clientX);
+    let clientY = e.clientY || (e.touches && e.touches[0].clientY);
+
+    const [x, y] = getCanvasCoordinates(state.canvas, clientX, clientY);
+    
+    state.ctx.beginPath();
+    state.ctx.moveTo(state.lastX, state.lastY);
+    state.ctx.lineTo(x, y);
+    state.ctx.stroke();
+
+    // 💡 핵심: 필기 데이터를 서버에 전송 (player ID 포함)
+    const drawData = {
+        type: 'draw',
+        player: player, 
+        lastX: state.lastX, lastY: state.lastY,
+        x: x, y: y,
+        color: penColor,
+        lineWidth: penWidth
+    };
+    if (socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify(drawData));
+    }
+
+    [state.lastX, state.lastY] = [x, y];
+}
+
+function stopDrawing(e) {
+    // 마우스 이벤트가 끝난 캔버스만 isDrawing을 false로 설정
+    const player = e.target.id === 'canvas-p1' ? 'p1' : 'p2';
+    playerState[player].isDrawing = false;
+    playerState[player].ctx.beginPath();
+}
+
+
+// 캔버스 전체 지우기 함수 (P1/P2 선택적 지우기)
+function clearCanvas(player) {
+    // 'p1' 또는 'p2'에 해당하는 context와 canvas를 선택
+    const ctx = player === 'p1' ? ctxP1 : ctxP2;
+    const canvas = player === 'p1' ? canvasP1 : canvasP2;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+
+// =======================================================
+// 4. WebSocket 데이터 수신 및 처리
+// =======================================================
+
+// 💡 다른 클라이언트로부터 받은 선을 그리는 함수
 function drawReceivedLine(data) {
-    // 임시로 현재 펜 설정으로 그립니다.
-    // (완벽한 구현을 위해서는 data에 펜 설정이 모두 포함되어야 합니다.)
-    ctx.strokeStyle = data.color || '#000000';
-    ctx.lineWidth = data.lineWidth || 4;
+    // 수신된 data.player에 따라 캔버스를 선택
+    const ctx = data.player === 'p1' ? ctxP1 : ctxP2; 
+    
+    ctx.strokeStyle = data.color;
+    ctx.lineWidth = data.lineWidth;
 
     ctx.beginPath();
     ctx.moveTo(data.lastX, data.lastY);
@@ -44,181 +173,66 @@ function drawReceivedLine(data) {
     ctx.closePath();
 }
 
-// 캔버스 전체 지우기 함수 (server.js와 동기화)
-function clearCanvas() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-}
+socket.onmessage = (event) => {
+    try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'draw') {
+            drawReceivedLine(data);
+        } else if (data.type === 'clear') {
+            // 💡 clear 명령 수신 시, 해당 캔버스(data.player)만 지우기
+            clearCanvas(data.player); 
+        }
+    } catch (e) {
+        console.error("수신된 데이터 파싱 오류:", e);
+    }
+};
+
 
 // =======================================================
-// 1. 필요한 HTML 요소들을 JavaScript 변수로 가져옵니다.
+// 5. 화면 전환 및 도구 선택 이벤트 리스너
 // =======================================================
 
-const subjectButtons = document.querySelectorAll('.subject-btn');
-const difficultySelection = document.getElementById('difficulty-selection');
-const difficultyButtons = document.querySelectorAll('.difficulty-btn');
-const mainScreen = document.getElementById('main-screen');
-const quizScreen = document.getElementById('quiz-screen');
-const backToMainButton = document.getElementById('back-to-main');
-const problemImage = document.getElementById('problem-image');
-
-// 드로잉 도구 관련 변수
-const canvas = document.getElementById('writing-canvas');
-const ctx = canvas.getContext('2d');
-const toolButtons = document.querySelectorAll('.tool-btn');
-const clearButton = document.getElementById('clear-btn');
-
-// 상태 저장 변수
+// A. 주제 및 난이도 선택 (API 호출)
 let selectedSubject = '';
 let selectedDifficulty = '';
-let isDrawing = false;
-let lastX = 0;
-let lastY = 0;
-let currentMode = 'pen'; // 'pen' 또는 'eraser'
-let currentColor = '#000000'; // 기본 검은색
 
-// =======================================================
-// 2. 캔버스 초기 설정 및 스타일 설정
-// =======================================================
-
-// 캔버스 내부 해상도 설정 (CSS와 비율이 일치해야 좌표 오차가 줄어듭니다)
-canvas.width = 800; 
-canvas.height = 400;
-
-// 드로잉 기본 스타일
-ctx.lineJoin = 'round';
-ctx.lineCap = 'round';
-ctx.lineWidth = 4; // 기본 펜 굵기
-
-// 캔버스 배경을 흰색으로 채워 지우개 기능이 작동하도록 초기화
-ctx.fillStyle = '#ffffff';
-ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-
-// =======================================================
-// 3. 드로잉 및 좌표 계산 함수 (좌표 보정 포함)
-// =======================================================
-
-function startDrawing(e) {
-    isDrawing = true;
-
-    // 좌표 계산을 위해 캔버스 위치 정보 및 마우스/터치 위치를 가져옵니다.
-    const rect = canvas.getBoundingClientRect();
-    let clientX = e.clientX || (e.touches && e.touches[0].clientX);
-    let clientY = e.clientY || (e.touches && e.touches[0].clientY);
-
-    // **핵심: 좌표 보정 로직**
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-
-    // 보정된 캔버스 내의 x, y 좌표를 계산합니다.
-    const x = (clientX - rect.left) * scaleX;
-    const y = (clientY - rect.top) * scaleY;
-
-    [lastX, lastY] = [x, y];
-
-    // 터치 시 스크롤 방지
-    e.preventDefault(); 
-}
-
-function draw(e) {
-    if (!isDrawing) return;
-
-    // 모드에 따른 펜/지우개 스타일 설정
-    if (currentMode === 'pen') {
-        ctx.strokeStyle = currentColor;
-        ctx.lineWidth = 4;
-    } else if (currentMode === 'eraser') {
-        ctx.strokeStyle = '#ffffff'; // 배경색과 같은 색으로 덮어쓰기
-        ctx.lineWidth = 20; // 지우개는 굵게
-    }
-
-    // 좌표 계산 (startDrawing과 동일한 보정 로직)
-    const rect = canvas.getBoundingClientRect();
-    let clientX = e.clientX || (e.touches && e.touches[0].clientX);
-    let clientY = e.clientY || (e.touches && e.touches[0].clientY);
-
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-
-    const x = (clientX - rect.left) * scaleX;
-    const y = (clientY - rect.top) * scaleY;
-
-    // 기존 draw(e) 함수에서 마지막 줄 ([lastX, lastY] = [x, y];) 이전에 추가
-
-    // ... (기존 draw 함수 코드) ...
-
-        ctx.beginPath();
-        ctx.moveTo(lastX, lastY);
-        ctx.lineTo(x, y);
-        ctx.stroke();
-
-        // 💡 핵심: 필기 데이터를 JSON 형태로 서버에 전송합니다.
-        const drawData = {
-            type: 'draw',
-            lastX: lastX,
-            lastY: lastY,
-            x: x,
-            y: y,
-            color: ctx.strokeStyle, // 현재 펜 색상도 함께 전송
-            lineWidth: ctx.lineWidth // 현재 펜 굵기도 함께 전송
-        };
-        if (socket.readyState === WebSocket.OPEN) {
-            socket.send(JSON.stringify(drawData));
-        }
-
-        [lastX, lastY] = [x, y];
-    }
-
-function stopDrawing() {
-    isDrawing = false;
-    ctx.beginPath(); // 선 그리기 종료
-}
-
-
-// =======================================================
-// 4. 화면 전환 및 도구 선택 이벤트 리스너
-// =======================================================
-
-// A. 주제 버튼 클릭 이벤트
-subjectButtons.forEach(button => {
+document.querySelectorAll('.subject-btn').forEach(button => {
     button.addEventListener('click', (event) => {
         selectedSubject = event.target.dataset.subject;
-        difficultySelection.style.display = 'block';
+        document.getElementById('difficulty-selection').style.display = 'block';
     });
 });
 
-// B. 난이도 버튼 클릭 이벤트
-difficultyButtons.forEach(button => {
+document.querySelectorAll('.difficulty-btn').forEach(button => {
     button.addEventListener('click', (event) => {
         selectedDifficulty = event.target.dataset.difficulty;
         startQuiz(selectedSubject, selectedDifficulty);
     });
 });
 
-// C. 퀴즈 시작 및 화면 전환 함수 수정 (약 190번째 줄 근처)
+
 function startQuiz(subject, difficulty) {
-    // 1. 서버의 새 문제 API 경로로 요청 (예: /api/quiz/polynomial/easy)
     fetch(`/api/quiz/${subject}/${difficulty}`)
         .then(response => response.json())
         .then(problemData => {
-            // API에서 에러 메시지가 온 경우 처리
             if (problemData.error) {
                 alert(problemData.error);
                 return;
             }
             
-            // 2. 요청 성공 시 화면 전환 및 문제 이미지 URL 로드
-            mainScreen.style.display = 'none';
-            quizScreen.style.display = 'block';
+            // 화면 전환
+            document.getElementById('main-screen').style.display = 'none';
+            document.getElementById('quiz-screen').style.display = 'block';
             
-            // 💡 서버에서 받은 문제의 URL로 이미지 소스를 설정합니다.
+            // 문제 이미지 URL 설정
             problemImage.src = problemData.url; 
             
-            // 3. 캔버스 초기화 및 기본 펜 설정
-            clearCanvas();
-            document.getElementById('pen-black-btn').click(); 
+            // 캔버스 초기화
+            clearCanvas('p1');
+            clearCanvas('p2');
+            
+            // P1 캔버스 도구만 초기 검은색 펜으로 설정
+            document.querySelector('.drawing-tools [data-player="p1"]').click();
         })
         .catch(error => {
             console.error('문제 로드 중 오류 발생:', error);
@@ -226,55 +240,58 @@ function startQuiz(subject, difficulty) {
         });
 }
 
-// D. 메인 화면으로 돌아가기 버튼
-backToMainButton.addEventListener('click', () => {
+// B. 메인 화면으로 돌아가기 버튼
+document.getElementById('back-to-main').addEventListener('click', () => {
     quizScreen.style.display = 'none';
     mainScreen.style.display = 'block';
     difficultySelection.style.display = 'none';
 });
 
-// E. 도구 선택 (펜 색상 및 지우개) 이벤트
+// C. 도구 선택 (펜 색상 및 지우개) 이벤트
 toolButtons.forEach(button => {
     button.addEventListener('click', (event) => {
-        // 모든 버튼 'selected' 해제, 클릭된 버튼만 'selected' 적용
-        toolButtons.forEach(btn => btn.classList.remove('selected'));
+        const player = event.target.dataset.player; // P1 또는 P2
+        const state = playerState[player];
+        
+        // 해당 플레이어의 도구 버튼만 선택 해제
+        document.querySelectorAll(`.drawing-tools [data-player="${player}"]`).forEach(btn => btn.classList.remove('selected'));
         event.target.classList.add('selected');
 
         const mode = event.target.dataset.mode;
         const color = event.target.dataset.color;
 
-        currentMode = mode;
-
+        state.mode = mode;
         if (mode === 'pen') {
-            currentColor = color;
+            state.color = color;
         }
     });
 });
 
-// 전체 지우기 (캔버스 초기화) 기능
-clearButton.addEventListener('click', () => {
-    // 캔버스 초기화 (로컬 화면)
-    clearCanvas();
+// D. 전체 지우기 기능 (명령 송신 포함)
+clearButtons.forEach(button => {
+    button.addEventListener('click', (event) => {
+        const player = event.target.dataset.player;
+        
+        // 로컬 화면 지우기
+        clearCanvas(player);
 
-    // 💡 핵심: 전체 지우기 명령을 서버에 전송합니다.
-    const clearData = { type: 'clear' };
-    if (socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify(clearData));
-    }
+        // 💡 전체 지우기 명령을 서버에 전송 (어느 캔버스인지 정보 포함)
+        const clearData = { type: 'clear', player: player };
+        if (socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify(clearData));
+        }
+    });
 });
 
 
-// =======================================================
-// 5. 드로잉 이벤트 리스너 연결
-// =======================================================
+// E. 드로잉 이벤트 리스너 연결 (P1, P2 캔버스 모두에 연결)
+[canvasP1, canvasP2].forEach(canvas => {
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mouseout', stopDrawing);
 
-// 마우스 이벤트
-canvas.addEventListener('mousedown', startDrawing);
-canvas.addEventListener('mousemove', draw);
-canvas.addEventListener('mouseup', stopDrawing);
-canvas.addEventListener('mouseout', stopDrawing);
-
-// 터치 이벤트 (태블릿 PC 지원)
-canvas.addEventListener('touchstart', startDrawing);
-canvas.addEventListener('touchmove', draw);
-canvas.addEventListener('touchend', stopDrawing);
+    canvas.addEventListener('touchstart', startDrawing);
+    canvas.addEventListener('touchmove', draw);
+    canvas.addEventListener('touchend', stopDrawing);
+});
