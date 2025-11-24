@@ -1,124 +1,151 @@
+/* --- 픽셀 아트 스타일의 핵심: 폰트 및 배경 --- */
+/* 픽셀 폰트 (웹 폰트가 필요하지만, Arial Black으로 최대한 비슷하게 흉내냅니다) */
 body {
-    font-family: 'Arial Black', sans-serif; /* 강렬한 글꼴 */
+    font-family: 'Arial Black', sans-serif; 
     margin: 0;
     padding: 0;
-    background-color: #1a1a1a; /* 어두운 배경 */
-    color: white; /* 흰색 글자 */
+    background-color: #00008b; /* 레트로 게임의 깊은 파란색 배경 */
+    color: white; 
     text-align: center;
 }
 
-h1 {
-    color: #ff0000; /* 강렬한 빨간색 제목 */
-    text-shadow: 2px 2px 4px #000;
-    margin-top: 50px;
-    font-size: 3em;
+/* 픽셀 테두리 효과를 위한 클래스 */
+.pixel-border {
+    /* 픽셀 테두리: 상하좌우 두꺼운 실선 */
+    border: 4px solid #000; 
+    box-shadow: 
+        4px 4px 0 #fff, /* 흰색 하이라이트 */
+        8px 8px 0 #555, /* 어두운 그림자 */
+        -4px -4px 0 #fff, /* 반대쪽 흰색 하이라이트 */
+        -8px -8px 0 #555; /* 반대쪽 어두운 그림자 */
+    padding: 10px;
 }
 
-/* 메인 및 퀴즈 화면 레이아웃 컨테이너 */
+/* --- 메인 제목 및 UI --- */
+.pixel-title {
+    font-size: 4.5em;
+    color: #ffd700; /* 금색 */
+    text-shadow: 8px 8px #ff0000, 10px 10px #000; /* 겹친 그림자 효과 */
+    margin: 20px 0 10px;
+    letter-spacing: 5px;
+}
+
+.subtitle {
+    font-size: 1.5em;
+    color: #fff;
+    margin-bottom: 30px;
+    text-shadow: 2px 2px #000;
+}
+
+#game-ui-bar {
+    font-size: 2em;
+    margin-bottom: 30px;
+    padding: 10px;
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 5px;
+}
+
+.heart-pixel {
+    margin-left: 10px;
+    font-size: 0.8em; /* 폰트 사이즈 조정 */
+}
+
+/* --- 메인 화면 컨테이너 --- */
 #main-screen, #quiz-screen {
-    max-width: 1000px;
+    max-width: 900px;
     margin: 30px auto;
-    padding: 25px;
-    background: linear-gradient(145deg, #333333, #111111); /* 그라데이션 배경 */
-    border: 5px solid #ff0000; /* 빨간색 테두리 */
-    border-radius: 10px;
-    box-shadow: 0 0 20px rgba(255, 0, 0, 0.5); /* 빛나는 효과 */
+    background-color: #333; 
+    /* 픽셀 테두리 재정의 */
+    border: 6px solid #ff0000; 
+    box-shadow: 
+        6px 6px 0 #ffd700, 
+        12px 12px 0 #000; 
+    padding: 20px;
+    border-radius: 0; /* 픽셀 아트는 각진 모양 */
 }
 
-/* --- 영역 분류 섹션 스타일 --- */
+/* --- 영역 그룹 --- */
 .subject-group {
     margin-bottom: 25px;
     padding: 15px;
-    border: 2px dashed #4CAF50; /* 녹색 점선 테두리 */
-    border-radius: 8px;
-    background-color: rgba(0, 0, 0, 0.3); /* 반투명 배경 */
+    border: 4px solid #fff;
+    border-radius: 0;
+    background-color: rgba(0, 0, 0, 0.4);
 }
 
 .subject-group h2 {
-    color: #4CAF50; /* 그룹 제목 색상 */
-    font-size: 1.8em;
+    color: #00ff00; /* 네온 그린 */
+    font-size: 1.6em;
     margin-bottom: 15px;
-    text-shadow: 1px 1px 2px #000;
+    text-shadow: 2px 2px #000;
+    letter-spacing: 1px;
 }
 
-/* --- 버튼 스타일 --- */
-.subject-btn, .difficulty-btn, #back-to-main, .tool-btn {
-    /* 펀치 버튼 느낌 */
-    padding: 12px 25px;
+/* --- 픽셀 버튼 스타일 --- */
+.pixel-btn {
+    padding: 10px 20px;
     font-size: 1.1em;
     cursor: pointer;
-    border: 3px solid #000;
-    border-radius: 5px;
-    transition: all 0.2s;
-    margin: 8px;
-    text-transform: uppercase;
+    border: none;
+    border-radius: 0; /* 각진 버튼 */
+    transition: all 0.05s;
+    margin: 6px;
     font-weight: bold;
-    box-shadow: 0 5px 0 #000; /* 3D 효과 */
+    text-transform: uppercase;
+    
+    /* 픽셀 버튼의 그림자 효과 */
+    box-shadow: 3px 3px 0 #000;
+    border-bottom: 3px solid #000;
+    border-right: 3px solid #000;
 }
 
-/* 주제 버튼 (선택 영역) */
+.pixel-btn:active {
+    box-shadow: 1px 1px 0 #000;
+    transform: translate(2px, 2px); /* 눌리는 효과 */
+}
+
+/* 주제 버튼 */
 .subject-btn { 
     background-color: #007bff; 
     color: white; 
 }
 .subject-btn:hover { 
     background-color: #0056b3; 
-    box-shadow: 0 2px 0 #000; 
-    transform: translateY(3px); /* 눌리는 효과 */
 }
 
 /* 난이도 버튼 */
-#difficulty-selection h2 {
-    color: #ffd700; /* 금색 */
-    margin-top: 30px;
-}
 .difficulty-btn { 
-    background-color: #ffd700; 
-    color: #333; 
-    border-color: #a08c00;
+    background-color: #ffaa00; /* 오렌지색 */
+    color: #000; 
 }
 .difficulty-btn:hover { 
-    background-color: #e0b400; 
-    box-shadow: 0 2px 0 #a08c00; 
-    transform: translateY(3px);
+    background-color: #cc8800; 
 }
 
-/* 캔버스 및 필기 영역 */
-#problem-area {
-    margin-bottom: 20px;
+/* 선택된 도구 */
+.tool-btn.selected {
+    background-color: #ff00ff; /* 마젠타 */
+    color: white;
+    box-shadow: 0 0 5px #ff00ff, 3px 3px 0 #000;
 }
+
+/* --- 캔버스 영역 --- */
 #problem-image {
     max-width: 100%;
     height: auto;
-    border: 3px solid #ffd700; /* 금색 테두리 */
-    box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+    border: 4px solid #00ff00; /* 네온 그린 테두리 */
+    box-shadow: 0 0 10px rgba(0, 255, 0, 0.7);
     background-color: #fff;
+    border-radius: 0;
 }
 
 #writing-canvas {
     width: 800px;
     height: 400px;
-    border: 5px solid #4CAF50; /* 녹색 테두리 */
+    border: 4px solid #ffaa00; /* 오렌지색 테두리 */
     background-color: #ffffff;
     cursor: crosshair;
-}
-
-/* 도구 선택 */
-#drawing-tools h3 { color: #fff; }
-.tool-btn {
-    background-color: #555;
-    color: #fff;
-    border-color: #333;
-}
-.tool-btn.selected {
-    background-color: #ff0000; /* 선택된 도구는 빨간색 */
-    border-color: #a00000;
-    box-shadow: 0 0 10px rgba(255, 0, 0, 0.7);
-}
-#clear-btn {
-    background-color: #dc3545;
-    color: white;
-    border-color: #9a2531;
+    border-radius: 0;
 }
 
 /* 메인으로 돌아가기 버튼 */
