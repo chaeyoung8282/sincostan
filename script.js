@@ -129,15 +129,15 @@ const FILE_PATH_MAP = {
 /**
  * 논리적 이미지 경로를 실제 로드 가능한 파일 이름으로 변환합니다.
  * @param {string} logicalPath JSON에 정의된 논리적 경로
- * @returns {string} 로드에 사용될 실제 파일 이름
+ * @returns {string} 로드에 사용될 실제 파일 경로 (예: /files/image_926f5c.png)
  */
 function resolveImagePath(logicalPath) {
     // 맵에 경로가 정의되어 있으면 실제 파일 이름 반환
     if (FILE_PATH_MAP[logicalPath]) {
-        return FILE_PATH_MAP[logicalPath];
+        // [수정]: Canvas 환경에서 업로드된 파일에 접근하는 표준 경로 (/files/)를 추가합니다.
+        return `/files/${FILE_PATH_MAP[logicalPath]}`;
     }
-    // 맵에 없으면 경로 그대로 반환 (Render 서버를 쓰는 경우 상대 경로가 될 것입니다)
-    // 그러나 Canvas 환경에서는 매핑이 없으면 로드에 실패할 가능성이 높습니다.
+    // 맵에 없으면 경로 그대로 반환 
     return logicalPath;
 }
 
