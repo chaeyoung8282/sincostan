@@ -122,15 +122,16 @@ const SUBJECT_NAMES = {
  */
 const FILE_PATH_MAP = {
     // 다항식 - 하 (EASY)의 논리적 경로를 사용자님이 업로드한 파일 이름으로 정확히 매핑합니다.
-    // 이 값은 실제 업로드된 파일 이름(image_926f5c.png)을 가리켜야 합니다.
-    "/images/polynomial/easy_1.png": "image_926f5c.png", 
+    // 기존 image_926f5c.png 파일이 404 오류를 지속적으로 발생시켜, 
+    // 로드 문제를 진단하기 위해 다른 업로드 파일 이름으로 교체합니다.
+    "/images/polynomial/easy_1.png": "image_913046.png", 
     // 다른 파일이 업로드되면 여기에 추가해야 합니다.
 };
 
 /**
  * 논리적 이미지 경로를 실제 로드 가능한 파일 경로로 변환합니다.
  * @param {string} logicalPath JSON에 정의된 논리적 경로
- * @returns {string} 로드에 사용될 실제 파일 경로 (예: /files/image_926f5c.png) 또는 경로 해결 함수 결과
+ * @returns {string} 로드에 사용될 실제 파일 경로 (예: /files/image_913046.png) 또는 경로 해결 함수 결과
  */
 function resolveImagePath(logicalPath) {
     const fileName = FILE_PATH_MAP[logicalPath];
@@ -330,10 +331,14 @@ async function showQuizScreen() {
     // --- 문제 이미지 로딩 로직 ---
     // 3. 이미지 로딩 에러 핸들러 설정
     problemImage.onerror = () => {
-        console.error(`Failed to load image: ${actualImagePath}. Falling back to error text.`);
+        // 어떤 경로가 실패했는지 콘솔에 더 명확하게 출력합니다.
+        console.error(`이미지 로드 실패 (404): ${actualImagePath}. 폴백 텍스트로 대체합니다.`); 
         // 에러 발생 시 폴백 이미지에 실패 경로 표시
         problemImage.src = `https://placehold.co/800x250/dc3545/ffffff?text=로딩+실패!+실제파일명:+${actualImagePath}`;
     };
+    
+    // 실제로 사용되는 경로를 명확하게 콘솔에 출력합니다.
+    console.log(`이미지 로딩 시도 경로: ${actualImagePath}`);
 
     // 4. 이미지 소스 설정 (로딩 시작)
     problemImage.src = actualImagePath;
