@@ -1,14 +1,54 @@
 {
   "polynomial": {
-    "hard": [],
-    "medium": [],
+    "hard": [
+      { "id": "p-h-1", "url": "/images/polynomial/hard_1.png" },
+      { "id": "p-h-2", "url": "/images/polynomial/hard_2.png" },
+      { "id": "p-h-3", "url": "/images/polynomial/hard_3.png" },
+      { "id": "p-h-4", "url": "/images/polynomial/hard_4.png" },
+      { "id": "p-h-5", "url": "/images/polynomial/hard_5.png" }
+    ],
+    "medium": [
+      { "id": "p-m-1", "url": "/images/polynomial/medium_1.png" },
+      { "id": "p-m-2", "url": "/images/polynomial/medium_2.png" },
+      { "id": "p-m-3", "url": "/images/polynomial/medium_3.png" },
+      { "id": "p-m-4", "url": "/images/polynomial/medium_4.png" },
+      { "id": "p-m-5", "url": "/images/polynomial/medium_5.png" }
+    ],
     "easy": [
-      { "id": "p-e-1", "url": "/images/polynomial/easy_1.png" }
+      { "id": "p-e-1", "url": "/images/polynomial/easy_1.png" },
+      { "id": "p-e-2", "url": "/images/polynomial/easy_2.png" },
+      { "id": "p-e-3", "url": "/images/polynomial/easy_3.png" },
+      { "id": "p-e-4", "url": "/images/polynomial/easy_4.png" },
+      { "id": "p-e-5", "url": "/images/polynomial/easy_5.png" }
     ],
     "difficulty_map": {
       "easy": "하 (TRAINING)",
       "medium": "중 (CHALLENGE)",
       "hard": "상 (BOSS)"
     }
+  },
+  "equation": {
+    "hard": [], "medium": [], "easy": [],
+    "difficulty_map": { "easy": "하 (TRAINING)", "medium": "중 (CHALLENGE)", "hard": "상 (BOSS)" }
+  },
+  "permutation": {
+    "hard": [], "medium": [], "easy": [],
+    "difficulty_map": { "easy": "하 (TRAINING)", "medium": "중 (CHALLENGE)", "hard": "상 (BOSS)" }
+  },
+  "matrix": {
+    "hard": [], "medium": [], "easy": [],
+    "difficulty_map": { "easy": "하 (TRAINING)", "medium": "중 (CHALLENGE)", "hard": "상 (BOSS)" }
+  },
+  "geometry": {
+    "hard": [], "medium": [], "easy": [],
+    "difficulty_map": { "easy": "하 (TRAINING)", "medium": "중 (CHALLENGE)", "hard": "상 (BOSS)" }
+  },
+  "set": {
+    "hard": [], "medium": [], "easy": [],
+    "difficulty_map": { "easy": "하 (TRAINING)", "medium": "중 (CHALLENGE)", "hard": "상 (BOSS)" }
+  },
+  "function": {
+    "hard": [], "medium": [], "easy": [],
+    "difficulty_map": { "easy": "하 (TRAINING)", "medium": "중 (CHALLENGE)", "hard": "상 (BOSS)" }
   }
 }
