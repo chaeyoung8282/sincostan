@@ -44,6 +44,10 @@ const drawingState = {
 let currentSubject = '';
 let currentDifficulty = '';
 
+// [추가] 현재 난이도에서 남아 있는 문제들을 관리하는 객체 (중복 방지용)
+// 키: "subject-difficulty" (예: "polynomial-easy"), 값: 남은 문제 객체 배열
+let availableProblems = {}; 
+
 /**
  * --- 문제 데이터 ---
  * problem.json 파일을 fetch하는 대신, 404 오류를 피하기 위해 내용을 직접 삽입합니다.
@@ -117,13 +121,11 @@ const SUBJECT_NAMES = {
 
 /**
  * [중요] 파일 경로 매핑 테이블: 논리적 경로 -> 실제 파일 이름
- * JSON 파일에 정의된 논리적인 경로(키)를 
- * 이 환경에 실제로 업로드된 파일 이름(값)으로 매핑합니다.
+ * 이 매핑은 논리적 이름(예: easy_1.png)을 시스템이 부여한 실제 파일 이름(예: image_xxxxxx.png)과 연결하는 데 필요합니다.
+ * 이 단계에서는 p-e-1 테스트를 위해 이 맵을 건너뛸 것입니다.
  */
 const FILE_PATH_MAP = {
-    // 다항식 - 하 (EASY)의 논리적 경로를 사용자님이 업로드한 파일 이름으로 정확히 매핑합니다.
-    // 기존 image_926f5c.png 파일이 404 오류를 지속적으로 발생시켜, 
-    // 로드 문제를 진단하기 위해 다른 업로드 파일 이름으로 교체합니다.
+    // 다항식 - 하 (EASY)의 논리적 경로
     "/images/polynomial/easy_1.png": "image_913046.png", 
     // 다른 파일이 업로드되면 여기에 추가해야 합니다.
 };
@@ -138,8 +140,7 @@ function resolveImagePath(logicalPath) {
     
     // 맵에 경로가 정의되어 있고, 파일 이름이 존재하는 경우
     if (fileName) {
-        // [수정]: __resolveFileReference를 사용하여 가장 안정적인 경로를 얻습니다.
-        // 이 함수가 정의되어 있으면 사용하고, 없으면 이전 방식인 /files/ 접두사를 유지합니다.
+        // __resolveFileReference를 사용하여 가장 안정적인 경로를 얻습니다.
         if (typeof __resolveFileReference === 'function') {
             return __resolveFileReference(fileName);
         }
@@ -296,7 +297,6 @@ async function showQuizScreen() {
     mainScreen.style.display = 'none';
     quizScreen.style.display = 'block';
     
-    // === 🚨 (더미) 서버에 문제 요청하는 로직 시뮬레이션 🚨 ===
     const subjectName = SUBJECT_NAMES[currentSubject] || '주제';
     const difficultyName = problemData[currentSubject]?.difficulty_map[currentDifficulty] || '난이도';
     const loadingMessage = `${subjectName} / ${difficultyName} 문제를 서버에 요청 중...`;
@@ -309,26 +309,58 @@ async function showQuizScreen() {
     // =======================================================
     
     const subjectData = problemData[currentSubject];
-    const problemArray = subjectData ? subjectData[currentDifficulty] : null;
+    const problemKey = `${currentSubject}-${currentDifficulty}`;
+    
+    const fullProblemArray = subjectData ? subjectData[currentDifficulty] : null;
 
-    if (!subjectData || !problemArray || problemArray.length === 0) {
+    if (!subjectData || !fullProblemArray || fullProblemArray.length === 0) {
         currentSubjectDifficulty.textContent = "오류: 해당 주제/난이도의 문제 배열을 찾을 수 없습니다.";
         problemImage.src = `https://placehold.co/800x250/dc3545/ffffff?text=JSON+데이터+누락!`;
         return;
     }
+
+    // 1. [문제 중복 방지 로직] 사용 가능한 문제 목록 초기화 및 관리
+    if (!availableProblems[problemKey] || availableProblems[problemKey].length === 0) {
+        // 문제 목록이 없거나 비어 있으면 전체 목록을 복사하여 초기화
+        availableProblems[problemKey] = [...fullProblemArray];
+        
+        // 문제 목록 리셋 메시지를 사용자에게 표시 (선택 사항)
+        if (fullProblemArray.length > 0) {
+            console.log(`[문제 시스템] ${subjectName} / ${difficultyName} 문제 목록이 초기화되었습니다. (${fullProblemArray.length}개)`);
+        }
+    }
+
+    const currentProblemArray = availableProblems[problemKey];
     
-    // 1. 문제 배열에서 랜덤으로 하나 선택
-    const randomIndex = Math.floor(Math.random() * problemArray.length);
-    const selectedProblem = problemArray[randomIndex];
+    // 2. 남은 문제 중 랜덤으로 하나 선택
+    const randomIndex = Math.floor(Math.random() * currentProblemArray.length);
+    const selectedProblem = currentProblemArray[randomIndex];
+    
+    // 3. 선택된 문제를 목록에서 제거하여 중복 방지
+    currentProblemArray.splice(randomIndex, 1);
+    
     const logicalPath = selectedProblem.url;
     
-    // 2. 논리적 경로를 실제 파일 이름으로 변환 (FILE_PATH_MAP 사용)
-    const actualImagePath = resolveImagePath(logicalPath); 
-
-    // 현재 문제/난이도 표시 업데이트
-    currentSubjectDifficulty.textContent = `${subjectName} / ${difficultyName} (ID: ${selectedProblem.id})`;
+    // --- 문제 이미지 로딩 로직 (최종 테스트) ---
+    let actualImagePath;
     
-    // --- 문제 이미지 로딩 로직 ---
+    if (selectedProblem.id.startsWith('p-e-')) {
+        // p-e-로 시작하는 쉬운 문제들은 매핑 대신 시스템 파일 이름으로 직접 로드 시도
+        const systemFileName = "image_913046.png"; 
+        if (typeof __resolveFileReference === 'function') {
+            actualImagePath = __resolveFileReference(systemFileName);
+        } else {
+            actualImagePath = `/files/${systemFileName}`;
+        }
+        console.warn(`[DEBUG] 쉬운 문제 ID(${selectedProblem.id})에 대해 논리적 경로 대신 시스템 파일명(${systemFileName})으로 직접 로드 시도.`);
+    } else {
+        // 다른 문제들은 기존 로직(매핑) 사용
+        actualImagePath = resolveImagePath(logicalPath); 
+    }
+    
+    // 현재 문제/난이도 표시 업데이트
+    currentSubjectDifficulty.textContent = `${subjectName} / ${difficultyName} (ID: ${selectedProblem.id}) (남은 문제: ${currentProblemArray.length}개)`;
+    
     // 3. 이미지 로딩 에러 핸들러 설정
     problemImage.onerror = () => {
         // 어떤 경로가 실패했는지 콘솔에 더 명확하게 출력합니다.
@@ -337,7 +369,6 @@ async function showQuizScreen() {
         problemImage.src = `https://placehold.co/800x250/dc3545/ffffff?text=로딩+실패!+실제파일명:+${actualImagePath}`;
     };
     
-    // 실제로 사용되는 경로를 명확하게 콘솔에 출력합니다.
     console.log(`이미지 로딩 시도 경로: ${actualImagePath}`);
 
     // 4. 이미지 소스 설정 (로딩 시작)
