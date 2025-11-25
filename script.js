@@ -1,3 +1,5 @@
+// script.js 파일 전체 코드
+
 // 캔버스 요소를 가져옵니다.
 const canvasP1 = document.getElementById('canvas-p1');
 const ctxP1 = canvasP1.getContext('2d');
@@ -44,38 +46,12 @@ const drawingState = {
 let currentSubject = '';
 let currentDifficulty = '';
 
-// [추가] 현재 난이도에서 남아 있는 문제들을 관리하는 객체 (중복 방지용)
-// 키: "subject-difficulty" (예: "polynomial-easy"), 값: 남은 문제 객체 배열
-let availableProblems = {}; 
-
 /**
- * --- 문제 데이터 ---
- * problem.json 파일을 fetch하는 대신, 404 오류를 피하기 위해 내용을 직접 삽입합니다.
+ * --- 문제 데이터 (클라이언트 측에서 서버로 요청하는 정보만 남김) ---
+ * 서버의 problems.json에 정의된 난이도 맵과 주제 이름만 유지합니다.
  */
 const problemData = {
   "polynomial": {
-    "hard": [
-      { "id": "p-h-1", "url": "/images/polynomial/hard_1.png" },
-      { "id": "p-h-2", "url": "/images/polynomial/hard_2.png" },
-      { "id": "p-h-3", "url": "/images/polynomial/hard_3.png" },
-      { "id": "p-h-4", "url": "/images/polynomial/hard_4.png" },
-      { "id": "p-h-5", "url": "/images/polynomial/hard_5.png" }
-    ],
-    "medium": [
-      { "id": "p-m-1", "url": "/images/polynomial/medium_1.png" },
-      { "id": "p-m-2", "url": "/images/polynomial/medium_2.png" },
-      { "id": "p-m-3", "url": "/images/polynomial/medium_3.png" },
-      { "id": "p-m-4", "url": "/images/polynomial/medium_4.png" },
-      { "id": "p-m-5", "url": "/images/polynomial/medium_5.png" }
-    ],
-    "easy": [
-      // TESTING: 모든 쉬운 문제는 업로드된 이미지로 대체
-      { "id": "p-e-1", "url": "/images/polynomial/easy_1.png" },
-      { "id": "p-e-2", "url": "/images/polynomial/easy_1.png" }, 
-      { "id": "p-e-3", "url": "/images/polynomial/easy_1.png" }, 
-      { "id": "p-e-4", "url": "/images/polynomial/easy_1.png" }, 
-      { "id": "p-e-5", "url": "/images/polynomial/easy_1.png" } 
-    ],
     "difficulty_map": {
       "easy": "하 (TRAINING)",
       "medium": "중 (CHALLENGE)",
@@ -83,27 +59,21 @@ const problemData = {
     }
   },
   "equation": {
-    "hard": [], "medium": [], "easy": [],
     "difficulty_map": { "easy": "하 (TRAINING)", "medium": "중 (CHALLENGE)", "hard": "상 (BOSS)" }
   },
   "permutation": {
-    "hard": [], "medium": [], "easy": [],
     "difficulty_map": { "easy": "하 (TRAINING)", "medium": "중 (CHALLENGE)", "hard": "상 (BOSS)" }
   },
   "matrix": {
-    "hard": [], "medium": [], "easy": [],
     "difficulty_map": { "easy": "하 (TRAINING)", "medium": "중 (CHALLENGE)", "hard": "상 (BOSS)" }
   },
   "geometry": {
-    "hard": [], "medium": [], "easy": [],
     "difficulty_map": { "easy": "하 (TRAINING)", "medium": "중 (CHALLENGE)", "hard": "상 (BOSS)" }
   },
   "set": {
-    "hard": [], "medium": [], "easy": [],
     "difficulty_map": { "easy": "하 (TRAINING)", "medium": "중 (CHALLENGE)", "hard": "상 (BOSS)" }
   },
   "function": {
-    "hard": [], "medium": [], "easy": [],
     "difficulty_map": { "easy": "하 (TRAINING)", "medium": "중 (CHALLENGE)", "hard": "상 (BOSS)" }
   }
 }; 
@@ -119,40 +89,6 @@ const SUBJECT_NAMES = {
     'function': '함수와 그래프'
 };
 
-/**
- * [중요] 파일 경로 매핑 테이블: 논리적 경로 -> 실제 파일 이름
- * 이 매핑은 논리적 이름(예: easy_1.png)을 시스템이 부여한 실제 파일 이름(예: image_xxxxxx.png)과 연결하는 데 필요합니다.
- * 이 단계에서는 p-e-1 테스트를 위해 이 맵을 건너뛸 것입니다.
- */
-const FILE_PATH_MAP = {
-    // 다항식 - 하 (EASY)의 논리적 경로
-    "/images/polynomial/easy_1.png": "image_913046.png", 
-    // 다른 파일이 업로드되면 여기에 추가해야 합니다.
-};
-
-/**
- * 논리적 이미지 경로를 실제 로드 가능한 파일 경로로 변환합니다.
- * @param {string} logicalPath JSON에 정의된 논리적 경로
- * @returns {string} 로드에 사용될 실제 파일 경로 (예: /files/image_913046.png) 또는 경로 해결 함수 결과
- */
-function resolveImagePath(logicalPath) {
-    const fileName = FILE_PATH_MAP[logicalPath];
-    
-    // 맵에 경로가 정의되어 있고, 파일 이름이 존재하는 경우
-    if (fileName) {
-        // __resolveFileReference를 사용하여 가장 안정적인 경로를 얻습니다.
-        if (typeof __resolveFileReference === 'function') {
-            return __resolveFileReference(fileName);
-        }
-        // Fallback: 이전 방식의 경로 (대부분의 환경에서 작동)
-        return `/files/${fileName}`;
-    }
-    // 맵에 없으면 경로 그대로 반환 
-    return logicalPath;
-}
-
-
-// --- 캔버스 드로잉 및 도구 로직은 변경 없음 ---
 
 // 캔버스 초기화 및 스타일 설정 함수
 function setupCanvasContext(ctx) {
@@ -291,7 +227,7 @@ function setupMainUiEvents() {
 }
 
 /**
- * 퀴즈 화면을 표시하고 문제를 로드합니다.
+ * 퀴즈 화면을 표시하고 서버에서 문제를 로드합니다.
  */
 async function showQuizScreen() {
     mainScreen.style.display = 'none';
@@ -299,81 +235,54 @@ async function showQuizScreen() {
     
     const subjectName = SUBJECT_NAMES[currentSubject] || '주제';
     const difficultyName = problemData[currentSubject]?.difficulty_map[currentDifficulty] || '난이도';
+    
     const loadingMessage = `${subjectName} / ${difficultyName} 문제를 서버에 요청 중...`;
     
     currentSubjectDifficulty.textContent = loadingMessage;
-    problemImage.src = `https://placehold.co/800x250/3498db/ffffff?text=${encodeURIComponent(loadingMessage)}`;
+    // 로딩 중임을 표시하는 이미지로 대체
+    problemImage.src = `https://placehold.co/800x250/3498db/ffffff?text=${encodeURIComponent('서버에 문제 요청 중...')}`;
     
-    // 서버 응답을 기다리는 것을 시뮬레이션
-    await new Promise(resolve => setTimeout(resolve, 500)); 
-    // =======================================================
-    
-    const subjectData = problemData[currentSubject];
-    const problemKey = `${currentSubject}-${currentDifficulty}`;
-    
-    const fullProblemArray = subjectData ? subjectData[currentDifficulty] : null;
+    let selectedProblem;
 
-    if (!subjectData || !fullProblemArray || fullProblemArray.length === 0) {
-        currentSubjectDifficulty.textContent = "오류: 해당 주제/난이도의 문제 배열을 찾을 수 없습니다.";
-        problemImage.src = `https://placehold.co/800x250/dc3545/ffffff?text=JSON+데이터+누락!`;
+    // 1. 서버 API를 호출하여 문제를 가져옵니다.
+    try {
+        const url = `/api/quiz/${currentSubject}/${currentDifficulty}`;
+        console.log(`[문제 시스템] 서버 API 호출 시도: ${url}`);
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        }
+        
+        selectedProblem = await response.json();
+    } catch (e) {
+        // API 요청 실패 또는 서버에서 에러 메시지 반환 시 처리
+        const errorMessage = e.message || "알 수 없는 서버 오류";
+        currentSubjectDifficulty.textContent = `오류: 문제를 로드하는 데 실패했습니다. (${errorMessage})`;
+        problemImage.src = `https://placehold.co/800x250/dc3545/ffffff?text=로딩+실패!`;
+        console.error("문제 로드 API 실패:", e);
         return;
     }
-
-    // 1. [문제 중복 방지 로직] 사용 가능한 문제 목록 초기화 및 관리
-    if (!availableProblems[problemKey] || availableProblems[problemKey].length === 0) {
-        // 문제 목록이 없거나 비어 있으면 전체 목록을 복사하여 초기화
-        availableProblems[problemKey] = [...fullProblemArray];
-        
-        // 문제 목록 리셋 메시지를 사용자에게 표시 (선택 사항)
-        if (fullProblemArray.length > 0) {
-            console.log(`[문제 시스템] ${subjectName} / ${difficultyName} 문제 목록이 초기화되었습니다. (${fullProblemArray.length}개)`);
-        }
-    }
-
-    const currentProblemArray = availableProblems[problemKey];
     
-    // 2. 남은 문제 중 랜덤으로 하나 선택
-    const randomIndex = Math.floor(Math.random() * currentProblemArray.length);
-    const selectedProblem = currentProblemArray[randomIndex];
+    // 2. 서버가 반환한 문제의 논리적 URL을 그대로 사용합니다.
+    const actualImagePath = selectedProblem.url;
     
-    // 3. 선택된 문제를 목록에서 제거하여 중복 방지
-    currentProblemArray.splice(randomIndex, 1);
-    
-    const logicalPath = selectedProblem.url;
-    
-    // --- 문제 이미지 로딩 로직 (최종 테스트) ---
-    let actualImagePath;
-    
-    if (selectedProblem.id.startsWith('p-e-')) {
-        // p-e-로 시작하는 쉬운 문제들은 매핑 대신 시스템 파일 이름으로 직접 로드 시도
-        const systemFileName = "image_913046.png"; 
-        if (typeof __resolveFileReference === 'function') {
-            actualImagePath = __resolveFileReference(systemFileName);
-        } else {
-            actualImagePath = `/files/${systemFileName}`;
-        }
-        console.warn(`[DEBUG] 쉬운 문제 ID(${selectedProblem.id})에 대해 논리적 경로 대신 시스템 파일명(${systemFileName})으로 직접 로드 시도.`);
-    } else {
-        // 다른 문제들은 기존 로직(매핑) 사용
-        actualImagePath = resolveImagePath(logicalPath); 
-    }
-    
-    // 현재 문제/난이도 표시 업데이트
-    currentSubjectDifficulty.textContent = `${subjectName} / ${difficultyName} (ID: ${selectedProblem.id}) (남은 문제: ${currentProblemArray.length}개)`;
+    // 현재 문제/난이도 표시 업데이트 (ID 포함)
+    currentSubjectDifficulty.textContent = `${subjectName} / ${difficultyName} (ID: ${selectedProblem.id})`;
     
     // 3. 이미지 로딩 에러 핸들러 설정
     problemImage.onerror = () => {
-        // 어떤 경로가 실패했는지 콘솔에 더 명확하게 출력합니다.
+        // GitHub Pages 환경에서는 /images/... 경로가 루트를 기준으로 로드되어야 합니다.
         console.error(`이미지 로드 실패 (404): ${actualImagePath}. 폴백 텍스트로 대체합니다.`); 
         // 에러 발생 시 폴백 이미지에 실패 경로 표시
-        problemImage.src = `https://placehold.co/800x250/dc3545/ffffff?text=로딩+실패!+실제파일명:+${actualImagePath}`;
+        problemImage.src = `https://placehold.co/800x250/dc3545/ffffff?text=로딩+실패!+경로:+${actualImagePath}`;
     };
     
     console.log(`이미지 로딩 시도 경로: ${actualImagePath}`);
 
     // 4. 이미지 소스 설정 (로딩 시작)
     problemImage.src = actualImagePath;
-    // --- 문제 이미지 로딩 로직 끝 ---
 }
 
 function showMainScreen() {
@@ -391,7 +300,7 @@ function showMainScreen() {
 }
 
 
-// 앱 초기화: 문제 데이터를 fetch할 필요 없이 바로 UI 이벤트 설정
+// 앱 초기화
 window.onload = async () => {
     setupMainUiEvents();
 };
