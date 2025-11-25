@@ -9,86 +9,86 @@
 
 <body>
 
+    <!-- 1. 메인 화면: 주제 및 난이도 선택 -->
     <div id="main-screen">
-        <h1 class="pixel-title">스트릿 매쓰 파이터</h1>
-        <h2 class="subtitle">난이도별 수학 문제 챌린지 !!!!</h2>
+        <h1>스트릿 매쓰 파이터</h1>
+        <h2 class="subtitle">난이도별 수학 문제 챌린지</h2>
 
-        <div id="game-ui-bar">
-            <span class="coin">🪙</span>
-            <span class="coin">🪙</span>
-            <span class="coin">🪙</span>
-            <span id="life-bar-container">
-                LIFE : 
-                <span class="heart-pixel">❤️</span>
-                <span class="heart-pixel">❤️</span>
-                <span class="heart-pixel">❤️</span>
-            </span>
-        </div>
+        <!-- 기존 #game-ui-bar (코인, 하트) 삭제 -->
 
+        <!-- 공통수학 1 그룹 -->
         <div class="subject-group">
             <h2>⚔️ 공통수학 1 : BASIC STAGE</h2>
             <div id="subject-buttons-group-1">
-                <button class="pixel-btn subject-btn" data-subject="polynomial">다항식</button>
-                <button class="pixel-btn subject-btn" data-subject="equation">방정식과 부등식</button>
-                <button class="pixel-btn subject-btn" data-subject="permutation">순열과 조합</button>
-                <button class="pixel-btn subject-btn" data-subject="matrix">행렬</button>
+                <button class="subject-btn" data-subject="polynomial">다항식</button>
+                <button class="subject-btn" data-subject="equation">방정식과 부등식</button>
+                <button class="subject-btn" data-subject="permutation">순열과 조합</button>
+                <button class="subject-btn" data-subject="matrix">행렬</button>
             </div>
         </div>
 
+        <!-- 공통수학 2 그룹 -->
         <div class="subject-group">
             <h2>🛡️ 공통수학 2 : ADVANCED STAGE</h2>
             <div id="subject-buttons-group-2">
-                <button class="pixel-btn subject-btn" data-subject="geometry">도형의 방정식</button>
-                <button class="pixel-btn subject-btn" data-subject="set">집합과 명제</button>
-                <button class="pixel-btn subject-btn" data-subject="function">함수와 그래프</button>
+                <button class="subject-btn" data-subject="geometry">도형의 방정식</button>
+                <button class="subject-btn" data-subject="set">집합과 명제</button>
+                <button class="subject-btn" data-subject="function">함수와 그래프</button>
             </div>
         </div>
 
         <div id="difficulty-selection" style="display: none;">
-            <h2 class="pixel-title">난이도 선택 !</h2>
-            <button class="pixel-btn difficulty-btn" data-difficulty="hard">상 : BOSS</button>
-            <button class="pixel-btn difficulty-btn" data-difficulty="medium">중 : CHALLENGE</button>
-            <button class="pixel-btn difficulty-btn" data-difficulty="easy">하 : TRAINING</button>
+            <h2>난이도 선택</h2>
+            <button class="difficulty-btn" data-difficulty="hard">상 : BOSS</button>
+            <button class="difficulty-btn" data-difficulty="medium">중 : CHALLENGE</button>
+            <button class="difficulty-btn" data-difficulty="easy">하 : TRAINING</button>
         </div>
     </div>
 
+    <!-- 2. 문제 풀이 화면: 캔버스 및 도구 (초기에는 숨김) -->
     <div id="quiz-screen" style="display: none;">
         <div id="problem-area">
-            <h2 class="pixel-title">문제 : <span id="current-subject-difficulty"></span></h2>
+            <h2>문제 : <span id="current-subject-difficulty"></span></h2>
             <img id="problem-image" src="" alt="수학 문제 이미지">
         </div>
 
+        <!-- 풀이 영역 컨테이너 -->
         <div id="solving-container">
             
+            <!-- === 왼쪽 풀이 공간 (Player 1) === -->
             <div class="player-writing-area">
-                <h3>P1: 나의 풀이 공간</h3>
+                <h3>풀이 공간</h3>
                 <canvas id="canvas-p1" class="writing-canvas"></canvas>
                 
+                <!-- 드로잉 도구 영역 (P1용) -->
                 <div class="drawing-tools">
-                    <button class="tool-btn selected" data-color="#000000" data-mode="pen" data-player="p1">⚫️ P1 펜</button>
-                    <button class="tool-btn" data-color="#ff0000" data-mode="pen" data-player="p1">🔴 P1 펜</button>
-                    <button class="tool-btn" data-mode="eraser" data-player="p1">🧽 P1 지우개</button>
-                    <button class="pixel-btn tool-btn clear-btn" data-player="p1">P1 전체 지우기</button>
+                    <button class="tool-btn selected" data-color="#000000" data-mode="pen" data-player="p1">⚫️ 검정 펜</button>
+                    <button class="tool-btn" data-color="#ff0000" data-mode="pen" data-player="p1">🔴 빨강 펜</button>
+                    <button class="tool-btn" data-mode="eraser" data-player="p1">🧽지우개</button>
+                    <button class="tool-btn clear-btn" data-player="p1"> 전체 지우기</button>
                 </div>
             </div>
 
+            <!-- === 오른쪽 풀이 공간 (Player 2) === -->
             <div class="player-writing-area">
-                <h3>P2: 동료의 풀이 공간</h3>
+                <h3>풀이 공간</h3>
                 <canvas id="canvas-p2" class="writing-canvas"></canvas>
                 
+                <!-- 드로잉 도구 영역 (P2용) -->
                 <div class="drawing-tools">
-                    <button class="tool-btn selected" data-color="#000000" data-mode="pen" data-player="p2">⚫️ P2 펜</button>
-                    <button class="tool-btn" data-color="#0000ff" data-mode="pen" data-player="p2">🔵 P2 펜</button>
-                    <button class="tool-btn" data-mode="eraser" data-player="p2">🧽 P2 지우개</button>
-                    <button class="pixel-btn tool-btn clear-btn" data-player="p2">P2 전체 지우기</button>
+                    <button class="tool-btn selected" data-color="#000000" data-mode="pen" data-player="p2">⚫️ 검정 펜</button>
+                    <button class="tool-btn" data-color="#ff0000" data-mode="pen" data-player="p2">🔴 빨강 펜</button>
+                    <button class="tool-btn" data-mode="eraser" data-player="p2">🧽지우개</button>
+                    <button class="tool-btn clear-btn" data-player="p2"> 전체 지우기</button>
                 </div>
             </div>
             
         </div>
         
-        <button id="back-to-main" class="pixel-btn">메인으로 돌아가기</button>
+        <button id="back-to-main" class="main-control-btn">메인으로 돌아가기</button>
     </div>
 
+    <!-- 3. JavaScript 파일 연결 -->
     <script src="script.js"></script>
 </body>
 </html>
