@@ -60,13 +60,13 @@ const SUBJECT_NAMES = {
  * [중요] 파일 경로 매핑 테이블: 논리적 경로 -> 실제 파일 이름
  * JSON 파일에 정의된 논리적인 경로(키)를 
  * 이 환경에 실제로 업로드된 파일 이름(값)으로 매핑합니다.
- * 파일을 추가할 때마다 이 객체를 업데이트해야 합니다.
+ * 이 매핑 테이블이 존재해야만, "/images/..."와 같은 논리적 경로를 사용할 수 있습니다.
  */
 const FILE_PATH_MAP = {
-    // 현재 다항식 - 하 (EASY)의 첫 번째 문제를 실제 업로드된 파일 이름으로 매핑합니다.
+    // 다항식 - 하 (EASY)의 첫 번째 문제를 실제 업로드된 파일 이름으로 매핑합니다.
     "/images/polynomial/easy_1.png": "image_926f5c.png", 
     
-    // 다른 파일들도 이 형식으로 추가해야 합니다. 예시:
+    // 이후 나머지 119개의 문제도 여기에 추가해야 합니다. 예시:
     // "/images/polynomial/easy_2.png": "실제_업로드된_파일_이름_2.png", 
     // "/images/polynomial/hard_1.png": "실제_업로드된_파일_이름_3.png"
 };
@@ -81,7 +81,7 @@ function resolveImagePath(logicalPath) {
     if (FILE_PATH_MAP[logicalPath]) {
         return FILE_PATH_MAP[logicalPath];
     }
-    // 맵에 없으면 경로 그대로 반환 (로딩 실패의 원인이 될 수 있음)
+    // 맵에 없으면 경로 그대로 반환 (이 경우 로딩에 실패할 가능성이 높습니다)
     return logicalPath;
 }
 
@@ -89,6 +89,7 @@ function resolveImagePath(logicalPath) {
 // --- 문제 데이터 로딩 함수 ---
 async function fetchProblemData() {
     try {
+        // 문제 데이터는 로컬의 problem.json 파일에서 로드합니다.
         const response = await fetch('problem.json');
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -238,10 +239,27 @@ function setupMainUiEvents() {
     backToMainBtn.addEventListener('click', showMainScreen);
 }
 
-function showQuizScreen() {
+/**
+ * 퀴즈 화면을 표시하고 문제를 로드합니다.
+ * 이 함수는 (서버 통신을 시뮬레이션한 후) 로컬 problemData에서 문제 정보를 가져옵니다.
+ */
+async function showQuizScreen() {
     mainScreen.style.display = 'none';
     quizScreen.style.display = 'block';
-
+    
+    // === 🚨 (더미) 서버에 문제 요청하는 로직 시뮬레이션 🚨 ===
+    // 현재는 서버가 없으므로 로컬 problemData를 사용하는 비동기 요청을 시뮬레이션합니다.
+    const subjectName = SUBJECT_NAMES[currentSubject] || '주제';
+    const difficultyName = problemData[currentSubject]?.difficulty_map[currentDifficulty] || '난이도';
+    const loadingMessage = `${subjectName} / ${difficultyName} 문제를 서버에 요청 중...`;
+    
+    currentSubjectDifficulty.textContent = loadingMessage;
+    problemImage.src = `https://placehold.co/800x250/3498db/ffffff?text=${encodeURIComponent(loadingMessage)}`;
+    
+    // 서버 응답을 기다리는 것을 시뮬레이션
+    await new Promise(resolve => setTimeout(resolve, 500)); 
+    // =======================================================
+    
     if (!problemData) {
         currentSubjectDifficulty.textContent = "오류: 문제 데이터를 로드하지 못했습니다.";
         problemImage.src = `https://placehold.co/800x250/dc3545/ffffff?text=문제+데이터+오류`;
@@ -252,8 +270,9 @@ function showQuizScreen() {
     const problemArray = subjectData ? subjectData[currentDifficulty] : null;
 
     if (!subjectData || !problemArray || problemArray.length === 0) {
+        // 이 메시지가 뜨는 것은 JSON 파일에 해당 주제/난이도 배열이 비어있거나 누락되었기 때문입니다.
         currentSubjectDifficulty.textContent = "오류: 해당 주제/난이도의 문제 배열을 찾을 수 없습니다.";
-        problemImage.src = `https://placehold.co/800x250/dc3545/ffffff?text=문제+데이터+오류`;
+        problemImage.src = `https://placehold.co/800x250/dc3545/ffffff?text=JSON+데이터+누락!`;
         return;
     }
     
@@ -262,29 +281,21 @@ function showQuizScreen() {
     const selectedProblem = problemArray[randomIndex];
     const logicalPath = selectedProblem.url;
     
-    // 2. 논리적 경로를 실제 파일 이름으로 변환
+    // 2. 논리적 경로를 실제 파일 이름으로 변환 (FILE_PATH_MAP 사용)
     const actualImagePath = resolveImagePath(logicalPath); 
 
-    // 콘솔에 로딩 시도 경로 로그
-    console.log("Attempting to load image from LOGICAL URL:", logicalPath);
-    console.log("Resolved to ACTUAL FILE NAME:", actualImagePath);
-
-    
     // 현재 문제/난이도 표시 업데이트
-    const subjectText = SUBJECT_NAMES[currentSubject] || '미정';
-    const difficultyText = subjectData.difficulty_map[currentDifficulty] || '미정';
-    currentSubjectDifficulty.textContent = `${subjectText} / ${difficultyText} (ID: ${selectedProblem.id})`;
+    currentSubjectDifficulty.textContent = `${subjectName} / ${difficultyName} (ID: ${selectedProblem.id})`;
     
     // --- 문제 이미지 로딩 로직 ---
     // 3. 이미지 로딩 에러 핸들러 설정
     problemImage.onerror = () => {
         console.error(`Failed to load image: ${actualImagePath}. Falling back to error text.`);
-        // 에러 발생 시 폴백 이미지에 실패 경로 표시 (JSON 경로 + 실제 경로 모두 표시)
+        // 에러 발생 시 폴백 이미지에 실패 경로 표시
         problemImage.src = `https://placehold.co/800x250/dc3545/ffffff?text=로딩+실패!+JSON경로:+${logicalPath}+/ 실제파일명:+${actualImagePath}`;
     };
 
     // 4. 이미지 소스 설정 (로딩 시작)
-    // resolveImagePath를 거친 실제 파일 이름으로 로드 시도
     problemImage.src = actualImagePath;
     // --- 문제 이미지 로딩 로직 끝 ---
 }
@@ -299,7 +310,7 @@ function showMainScreen() {
     currentSubject = '';
     currentDifficulty = '';
     
-    // 이미지 에러 핸들러 초기화 (다음 문제 로드 시 다시 설정할 수 있도록)
+    // 이미지 에러 핸들러 초기화
     problemImage.onerror = null; 
 }
 
