@@ -65,11 +65,12 @@ const problemData = {
       { "id": "p-m-5", "url": "/images/polynomial/medium_5.png" }
     ],
     "easy": [
+      // TESTING: 모든 쉬운 문제는 업로드된 이미지로 대체
       { "id": "p-e-1", "url": "/images/polynomial/easy_1.png" },
-      { "id": "p-e-2", "url": "/images/polynomial/easy_2.png" },
-      { "id": "p-e-3", "url": "/images/polynomial/easy_3.png" },
-      { "id": "p-e-4", "url": "/images/polynomial/easy_4.png" },
-      { "id": "p-e-5", "url": "/images/polynomial/easy_5.png" }
+      { "id": "p-e-2", "url": "/images/polynomial/easy_1.png" }, 
+      { "id": "p-e-3", "url": "/images/polynomial/easy_1.png" }, 
+      { "id": "p-e-4", "url": "/images/polynomial/easy_1.png" }, 
+      { "id": "p-e-5", "url": "/images/polynomial/easy_1.png" } 
     ],
     "difficulty_map": {
       "easy": "하 (TRAINING)",
@@ -118,15 +119,11 @@ const SUBJECT_NAMES = {
  * [중요] 파일 경로 매핑 테이블: 논리적 경로 -> 실제 파일 이름
  * JSON 파일에 정의된 논리적인 경로(키)를 
  * 이 환경에 실제로 업로드된 파일 이름(값)으로 매핑합니다.
- * 이 매핑 테이블이 존재해야만, "/images/..."와 같은 논리적 경로를 사용할 수 있습니다.
  */
 const FILE_PATH_MAP = {
-    // 다항식 - 하 (EASY)의 첫 번째 문제를 실제 업로드된 파일 이름으로 매핑합니다.
+    // 다항식 - 하 (EASY)의 논리적 경로를 사용자님이 업로드한 파일 이름으로 정확히 매핑합니다.
     "/images/polynomial/easy_1.png": "image_926f5c.png", 
-    
-    // 이후 나머지 119개의 문제도 여기에 추가해야 합니다. 예시:
-    // "/images/polynomial/easy_2.png": "실제_업로드된_파일_이름_2.png", 
-    // "/images/polynomial/hard_1.png": "실제_업로드된_파일_이름_3.png"
+    // 다른 파일이 업로드되면 여기에 추가해야 합니다.
 };
 
 /**
@@ -139,7 +136,8 @@ function resolveImagePath(logicalPath) {
     if (FILE_PATH_MAP[logicalPath]) {
         return FILE_PATH_MAP[logicalPath];
     }
-    // 맵에 없으면 경로 그대로 반환 (이 경우 로딩에 실패할 가능성이 높습니다)
+    // 맵에 없으면 경로 그대로 반환 (Render 서버를 쓰는 경우 상대 경로가 될 것입니다)
+    // 그러나 Canvas 환경에서는 매핑이 없으면 로드에 실패할 가능성이 높습니다.
     return logicalPath;
 }
 
@@ -290,7 +288,6 @@ async function showQuizScreen() {
     quizScreen.style.display = 'block';
     
     // === 🚨 (더미) 서버에 문제 요청하는 로직 시뮬레이션 🚨 ===
-    // 로컬 데이터를 사용하지만, 로딩 메시지와 딜레이는 유지합니다.
     const subjectName = SUBJECT_NAMES[currentSubject] || '주제';
     const difficultyName = problemData[currentSubject]?.difficulty_map[currentDifficulty] || '난이도';
     const loadingMessage = `${subjectName} / ${difficultyName} 문제를 서버에 요청 중...`;
@@ -306,7 +303,6 @@ async function showQuizScreen() {
     const problemArray = subjectData ? subjectData[currentDifficulty] : null;
 
     if (!subjectData || !problemArray || problemArray.length === 0) {
-        // 이 메시지가 뜨는 것은 JSON 파일에 해당 주제/난이도 배열이 비어있기 때문입니다.
         currentSubjectDifficulty.textContent = "오류: 해당 주제/난이도의 문제 배열을 찾을 수 없습니다.";
         problemImage.src = `https://placehold.co/800x250/dc3545/ffffff?text=JSON+데이터+누락!`;
         return;
@@ -328,7 +324,7 @@ async function showQuizScreen() {
     problemImage.onerror = () => {
         console.error(`Failed to load image: ${actualImagePath}. Falling back to error text.`);
         // 에러 발생 시 폴백 이미지에 실패 경로 표시
-        problemImage.src = `https://placehold.co/800x250/dc3545/ffffff?text=로딩+실패!+JSON경로:+${logicalPath}+/ 실제파일명:+${actualImagePath}`;
+        problemImage.src = `https://placehold.co/800x250/dc3545/ffffff?text=로딩+실패!+실제파일명:+${actualImagePath}`;
     };
 
     // 4. 이미지 소스 설정 (로딩 시작)
@@ -353,6 +349,5 @@ function showMainScreen() {
 
 // 앱 초기화: 문제 데이터를 fetch할 필요 없이 바로 UI 이벤트 설정
 window.onload = async () => {
-    // 문제 데이터가 인라인으로 삽입되었으므로 fetchProblemData 호출 제거
     setupMainUiEvents();
 };
