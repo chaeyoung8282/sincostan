@@ -19,10 +19,6 @@ const CANVAS_HEIGHT = 400;
 canvasP1.width = CANVAS_WIDTH; canvasP1.height = CANVAS_HEIGHT;
 canvasP2.width = CANVAS_WIDTH; canvasP2.height = CANVAS_HEIGHT;
 
-// Firestore 및 인증 관련 전역 변수 설정 (사용자 인증 및 데이터 저장을 위해 필요)
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-
 // 드로잉 상태를 저장할 객체
 const drawingState = {
     p1: {
@@ -47,54 +43,6 @@ const drawingState = {
 
 let currentSubject = '';
 let currentDifficulty = '';
-let userId = null;
-let db = null;
-let auth = null;
-
-// Firebase 및 인증 설정 함수
-async function initializeFirebase() {
-    // Firebase SDK import
-    const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js");
-    const { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
-    const { getFirestore, doc, setDoc, onSnapshot, collection, query, where, updateDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
-    const { setLogLevel } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
-
-    // setLogLevel('Debug'); // 디버그 로그 활성화
-
-    // Firebase 설정이 비어 있는지 확인하는 로직 강화 및 에러 메시지 개선
-    if (!firebaseConfig || Object.keys(firebaseConfig).length === 0 || !firebaseConfig.projectId) {
-        console.error("FATAL ERROR: Firebase config is missing. The environment variable __firebase_config was empty or invalid. Please refresh the page or try restarting the app.");
-        return;
-    }
-
-    const app = initializeApp(firebaseConfig);
-    db = getFirestore(app);
-    auth = getAuth(app);
-
-    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-    if (initialAuthToken) {
-        await signInWithCustomToken(auth, initialAuthToken).catch(error => {
-            console.error("Error signing in with custom token:", error);
-            signInAnonymously(auth); // Fallback to anonymous sign-in
-        });
-    } else {
-        await signInAnonymously(auth);
-    }
-
-    onAuthStateChanged(auth, (user) => {
-        if (user) {
-            userId = user.uid;
-            console.log("User authenticated. UID:", userId);
-        } else {
-            // 사용자 ID가 없는 경우 임시 ID 사용 ( Firestore 보안 규칙에 따라 변경될 수 있음)
-            userId = crypto.randomUUID(); 
-            console.log("User signed out or anonymous. Using temporary ID:", userId);
-        }
-        // 인증 완료 후 데이터 리스너 설정
-        setupDataListeners();
-    });
-}
 
 // 캔버스 초기화 및 스타일 설정 함수
 function setupCanvasContext(ctx) {
@@ -112,8 +60,8 @@ function setupCanvasContext(ctx) {
 setupCanvasContext(ctxP1);
 setupCanvasContext(ctxP2);
 
-// 드로잉 함수
-function draw(e, state, isLocal) {
+// 드로잉 함수 (Firebase 제거로 인해 isLocal 인수는 무시됨)
+function draw(e, state) {
     if (!state.isDrawing) return;
 
     // 터치 이벤트 처리
@@ -145,91 +93,9 @@ function draw(e, state, isLocal) {
     state.ctx.stroke();
 
     [state.lastX, state.lastY] = [currentX, currentY];
-
-    // 로컬 드로잉인 경우에만 Firestore에 저장
-    if (isLocal) {
-        saveDrawingData(state.canvas.id, {
-            x1: state.lastX,
-            y1: state.lastY,
-            x2: currentX,
-            y2: currentY,
-            color: state.color,
-            mode: state.mode,
-            lineWidth: state.mode === 'eraser' ? 20 : 5
-        });
-    }
+    
+    // 이 위치에 있던 Firestore 저장 로직이 제거되었습니다.
 }
-
-// Firestore에 드로잉 데이터 저장 (실시간 동기화를 위해 단순화된 예시)
-function saveDrawingData(canvasId, data) {
-    // 실제 앱에서는 성능을 위해 드로잉 이벤트의 빈도를 조절해야 합니다.
-    // 여기서는 간단히 마지막 그리기 데이터를 저장합니다.
-    if (!db || !userId) return;
-
-    const docRef = doc(db, "artifacts", appId, "public", "data", "quiz_sessions", "shared_drawing");
-    
-    // 데이터 구조: { p1: [path_data], p2: [path_data] }
-    // 여기서는 동기화 데모를 위해 캔버스별 마지막 드로잉 좌표를 저장합니다.
-    
-    const canvasKey = canvasId === 'canvas-p1' ? 'p1_drawing' : 'p2_drawing';
-
-    setDoc(docRef, { 
-        [canvasKey]: JSON.stringify(data), // 드로잉 데이터를 문자열로 직렬화
-        timestamp: Date.now() 
-    }, { merge: true }).catch(e => console.error("Error saving drawing data: ", e));
-}
-
-
-// Firestore에서 드로잉 데이터 동기화
-function setupDataListeners() {
-    if (!db || !userId) {
-        console.warn("Firestore not initialized or userId not set.");
-        return;
-    }
-
-    const docRef = doc(db, "artifacts", appId, "public", "data", "quiz_sessions", "shared_drawing");
-
-    onSnapshot(docRef, (docSnap) => {
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            
-            // P1 데이터 동기화
-            if (data.p1_drawing) {
-                const drawingData = JSON.parse(data.p1_drawing);
-                drawRemote(drawingData, drawingState.p1);
-            }
-
-            // P2 데이터 동기화
-            if (data.p2_drawing) {
-                const drawingData = JSON.parse(data.p2_drawing);
-                drawRemote(drawingData, drawingState.p2);
-            }
-        }
-    }, (error) => {
-        console.error("Error listening to drawing data:", error);
-    });
-}
-
-// 원격 데이터를 캔버스에 그리는 함수
-function drawRemote(data, state) {
-    const ctx = state.ctx;
-    ctx.beginPath();
-    
-    // 지우개 모드 처리
-    if (data.mode === 'eraser') {
-        ctx.globalCompositeOperation = 'destination-out';
-    } else {
-        ctx.globalCompositeOperation = 'source-over';
-    }
-    
-    ctx.lineWidth = data.lineWidth;
-    ctx.strokeStyle = data.color;
-    
-    ctx.moveTo(data.x1, data.y1);
-    ctx.lineTo(data.x2, data.y2);
-    ctx.stroke();
-}
-
 
 // 이벤트 리스너 설정
 function setupCanvasEvents(canvas, player) {
@@ -253,18 +119,17 @@ function setupCanvasEvents(canvas, player) {
 
     const stopDrawing = () => {
         state.isDrawing = false;
-        // Firestore에 최종 경로 저장 또는 상태 업데이트 (선택 사항)
     };
 
     canvas.addEventListener('mousedown', startDrawing);
     canvas.addEventListener('mouseup', stopDrawing);
     canvas.addEventListener('mouseout', stopDrawing);
-    canvas.addEventListener('mousemove', (e) => draw(e, state, true));
+    canvas.addEventListener('mousemove', (e) => draw(e, state));
 
     canvas.addEventListener('touchstart', startDrawing);
     canvas.addEventListener('touchend', stopDrawing);
     canvas.addEventListener('touchcancel', stopDrawing);
-    canvas.addEventListener('touchmove', (e) => draw(e, state, true));
+    canvas.addEventListener('touchmove', (e) => draw(e, state));
 
     // 툴 버튼 리스너
     document.querySelectorAll(`.tool-btn[data-player="${player}"]`).forEach(button => {
@@ -293,27 +158,30 @@ setupCanvasEvents(canvasP2, 'p2');
 
 
 // 메인 화면 UI 로직
-document.querySelectorAll('.subject-btn').forEach(button => {
-    button.addEventListener('click', () => {
-        currentSubject = button.dataset.subject;
-        // 주제 버튼을 누르면 난이도 선택 화면 표시
-        document.querySelectorAll('.subject-btn').forEach(btn => btn.classList.remove('selected'));
-        button.classList.add('selected');
+function setupMainUiEvents() {
+    document.querySelectorAll('.subject-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            currentSubject = button.dataset.subject;
+            // 주제 버튼을 누르면 난이도 선택 화면 표시
+            document.querySelectorAll('.subject-btn').forEach(btn => btn.classList.remove('selected'));
+            button.classList.add('selected');
 
-        difficultySelection.style.display = 'block';
+            difficultySelection.style.display = 'block';
+        });
     });
-});
 
-document.querySelectorAll('.difficulty-btn').forEach(button => {
-    button.addEventListener('click', () => {
-        currentDifficulty = button.dataset.difficulty;
-        
-        // 난이도 버튼을 누르면 퀴즈 화면 표시
-        showQuizScreen();
+    document.querySelectorAll('.difficulty-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            currentDifficulty = button.dataset.difficulty;
+            
+            // 난이도 버튼을 누르면 퀴즈 화면 표시
+            showQuizScreen();
+        });
     });
-});
 
-backToMainBtn.addEventListener('click', showMainScreen);
+    backToMainBtn.addEventListener('click', showMainScreen);
+}
+
 
 function showQuizScreen() {
     mainScreen.style.display = 'none';
@@ -376,5 +244,5 @@ function showMainScreen() {
 }
 
 
-// 앱 초기화
-window.onload = initializeFirebase;
+// 앱 초기화 (이제 Firebase 초기화 대신 UI 이벤트만 설정)
+window.onload = setupMainUiEvents;
