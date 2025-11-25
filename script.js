@@ -122,20 +122,28 @@ const SUBJECT_NAMES = {
  */
 const FILE_PATH_MAP = {
     // 다항식 - 하 (EASY)의 논리적 경로를 사용자님이 업로드한 파일 이름으로 정확히 매핑합니다.
+    // 이 값은 실제 업로드된 파일 이름(image_926f5c.png)을 가리켜야 합니다.
     "/images/polynomial/easy_1.png": "image_926f5c.png", 
     // 다른 파일이 업로드되면 여기에 추가해야 합니다.
 };
 
 /**
- * 논리적 이미지 경로를 실제 로드 가능한 파일 이름으로 변환합니다.
+ * 논리적 이미지 경로를 실제 로드 가능한 파일 경로로 변환합니다.
  * @param {string} logicalPath JSON에 정의된 논리적 경로
- * @returns {string} 로드에 사용될 실제 파일 경로 (예: /files/image_926f5c.png)
+ * @returns {string} 로드에 사용될 실제 파일 경로 (예: /files/image_926f5c.png) 또는 경로 해결 함수 결과
  */
 function resolveImagePath(logicalPath) {
-    // 맵에 경로가 정의되어 있으면 실제 파일 이름 반환
-    if (FILE_PATH_MAP[logicalPath]) {
-        // [수정]: Canvas 환경에서 업로드된 파일에 접근하는 표준 경로 (/files/)를 추가합니다.
-        return `/files/${FILE_PATH_MAP[logicalPath]}`;
+    const fileName = FILE_PATH_MAP[logicalPath];
+    
+    // 맵에 경로가 정의되어 있고, 파일 이름이 존재하는 경우
+    if (fileName) {
+        // [수정]: __resolveFileReference를 사용하여 가장 안정적인 경로를 얻습니다.
+        // 이 함수가 정의되어 있으면 사용하고, 없으면 이전 방식인 /files/ 접두사를 유지합니다.
+        if (typeof __resolveFileReference === 'function') {
+            return __resolveFileReference(fileName);
+        }
+        // Fallback: 이전 방식의 경로 (대부분의 환경에서 작동)
+        return `/files/${fileName}`;
     }
     // 맵에 없으면 경로 그대로 반환 
     return logicalPath;
