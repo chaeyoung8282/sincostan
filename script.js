@@ -1,297 +1,364 @@
-// =======================================================
-// 1. WebSocket 및 환경 설정
-// =======================================================
-
-// 실제 서버에 올릴 경우 Render URL로 변경하세요. (예: wss://your-render-app.onrender.com)
-// 현재는 로컬 테스트용입니다.
-const RENDER_URL = window.location.host;
-const socket = new WebSocket(`wss://${RENDER_URL}`); 
-
-socket.onopen = () => {
-    console.log('🔗 WebSocket 서버에 연결되었습니다.');
-};
-
-socket.onerror = (error) => {
-    console.error('❌ WebSocket 오류 발생:', error);
-};
-
-
-// =======================================================
-// 2. HTML 요소 및 캔버스 설정
-// =======================================================
-
-const subjectButtons = document.querySelectorAll('.subject-btn');
-const difficultySelection = document.getElementById('difficulty-selection');
-const mainScreen = document.getElementById('main-screen');
-const quizScreen = document.getElementById('quiz-screen');
-const problemImage = document.getElementById('problem-image');
-
-// 💡 P1/P2 캔버스 및 컨텍스트
+// 캔버스 요소를 가져옵니다.
 const canvasP1 = document.getElementById('canvas-p1');
 const ctxP1 = canvasP1.getContext('2d');
 const canvasP2 = document.getElementById('canvas-p2');
 const ctxP2 = canvasP2.getContext('2d');
 
-const toolButtons = document.querySelectorAll('.tool-btn');
-const clearButtons = document.querySelectorAll('.clear-btn'); 
+// 메인 화면과 퀴즈 화면 요소를 가져옵니다.
+const mainScreen = document.getElementById('main-screen');
+const quizScreen = document.getElementById('quiz-screen');
+const currentSubjectDifficulty = document.getElementById('current-subject-difficulty');
+const problemImage = document.getElementById('problem-image');
+const backToMainBtn = document.getElementById('back-to-main');
+const difficultySelection = document.getElementById('difficulty-selection');
 
-// 💡 상태 변수: P1과 P2 각각의 상태를 저장
-let playerState = {
-    'p1': {
-        isDrawing: false, lastX: 0, lastY: 0,
-        mode: 'pen', color: '#000000', 
-        canvas: canvasP1, ctx: ctxP1
-    },
-    'p2': {
-        isDrawing: false, lastX: 0, lastY: 0,
-        mode: 'pen', color: '#000000', 
-        canvas: canvasP2, ctx: ctxP2
-    }
-};
+// 캔버스 해상도 설정 (기본 해상도로 변경)
+const CANVAS_WIDTH = 550; 
+const CANVAS_HEIGHT = 400; 
 
-// 캔버스 해상도 설정 (CSS 크기에 맞춰 내부 해상도 설정)
-const CANVAS_WIDTH = 900; 
-const CANVAS_HEIGHT = 450;
 canvasP1.width = CANVAS_WIDTH; canvasP1.height = CANVAS_HEIGHT;
 canvasP2.width = CANVAS_WIDTH; canvasP2.height = CANVAS_HEIGHT;
 
-// 드로잉 기본 스타일 초기화
-[ctxP1, ctxP2].forEach(ctx => {
-    ctx.lineJoin = 'round';
-    ctx.lineCap = 'round';
-    ctx.lineWidth = 4;
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT); // 배경 흰색으로 초기화
-});
+// Firestore 및 인증 관련 전역 변수 설정 (사용자 인증 및 데이터 저장을 위해 필요)
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
 
-// =======================================================
-// 3. 드로잉 및 좌표 계산 함수 (P1/P2 통합)
-// =======================================================
-
-// 캔버스 내 좌표 계산 (특정 캔버스에 맞춤)
-function getCanvasCoordinates(canvas, clientX, clientY) {
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-
-    const x = (clientX - rect.left) * scaleX;
-    const y = (clientY - rect.top) * scaleY;
-    return [x, y];
-}
-
-function startDrawing(e) {
-    // 💡 클릭/터치된 캔버스가 P1인지 P2인지 ID로 확인
-    const player = e.target.id === 'canvas-p1' ? 'p1' : 'p2';
-    const state = playerState[player];
-    
-    state.isDrawing = true;
-    
-    let clientX = e.clientX || (e.touches && e.touches[0].clientX);
-    let clientY = e.clientY || (e.touches && e.touches[0].clientY);
-    
-    [state.lastX, state.lastY] = getCanvasCoordinates(state.canvas, clientX, clientY);
-    
-    e.preventDefault(); 
-}
-
-function draw(e) {
-    // 💡 마우스가 이동 중인 캔버스 상태를 찾습니다.
-    const player = e.target.id === 'canvas-p1' ? 'p1' : 'p2';
-    const state = playerState[player];
-    
-    if (!state.isDrawing) return;
-
-    // 모드에 따른 펜/지우개 스타일 설정
-    const penColor = state.mode === 'pen' ? state.color : '#ffffff';
-    const penWidth = state.mode === 'pen' ? 4 : 20;
-    
-    state.ctx.strokeStyle = penColor;
-    state.ctx.lineWidth = penWidth;
-
-    let clientX = e.clientX || (e.touches && e.touches[0].clientX);
-    let clientY = e.clientY || (e.touches && e.touches[0].clientY);
-
-    const [x, y] = getCanvasCoordinates(state.canvas, clientX, clientY);
-    
-    state.ctx.beginPath();
-    state.ctx.moveTo(state.lastX, state.lastY);
-    state.ctx.lineTo(x, y);
-    state.ctx.stroke();
-
-    // 💡 핵심: 필기 데이터를 서버에 전송 (player ID 포함)
-    const drawData = {
-        type: 'draw',
-        player: player, 
-        lastX: state.lastX, lastY: state.lastY,
-        x: x, y: y,
-        color: penColor,
-        lineWidth: penWidth
-    };
-    if (socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify(drawData));
-    }
-
-    [state.lastX, state.lastY] = [x, y];
-}
-
-function stopDrawing(e) {
-    // 마우스 이벤트가 끝난 캔버스만 isDrawing을 false로 설정
-    const player = e.target.id === 'canvas-p1' ? 'p1' : 'p2';
-    playerState[player].isDrawing = false;
-    playerState[player].ctx.beginPath();
-}
-
-
-// 캔버스 전체 지우기 함수 (P1/P2 선택적 지우기)
-function clearCanvas(player) {
-    // 'p1' 또는 'p2'에 해당하는 context와 canvas를 선택
-    const ctx = player === 'p1' ? ctxP1 : ctxP2;
-    const canvas = player === 'p1' ? canvasP1 : canvasP2;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-}
-
-
-// =======================================================
-// 4. WebSocket 데이터 수신 및 처리
-// =======================================================
-
-// 💡 다른 클라이언트로부터 받은 선을 그리는 함수
-function drawReceivedLine(data) {
-    // 수신된 data.player에 따라 캔버스를 선택
-    const ctx = data.player === 'p1' ? ctxP1 : ctxP2; 
-    
-    ctx.strokeStyle = data.color;
-    ctx.lineWidth = data.lineWidth;
-
-    ctx.beginPath();
-    ctx.moveTo(data.lastX, data.lastY);
-    ctx.lineTo(data.x, data.y);
-    ctx.stroke();
-    ctx.closePath();
-}
-
-socket.onmessage = (event) => {
-    try {
-        const data = JSON.parse(event.data);
-        if (data.type === 'draw') {
-            drawReceivedLine(data);
-        } else if (data.type === 'clear') {
-            // 💡 clear 명령 수신 시, 해당 캔버스(data.player)만 지우기
-            clearCanvas(data.player); 
-        }
-    } catch (e) {
-        console.error("수신된 데이터 파싱 오류:", e);
+// 드로잉 상태를 저장할 객체
+const drawingState = {
+    p1: {
+        isDrawing: false,
+        lastX: 0,
+        lastY: 0,
+        color: '#000000',
+        mode: 'pen',
+        ctx: ctxP1,
+        canvas: canvasP1,
+    },
+    p2: {
+        isDrawing: false,
+        lastX: 0,
+        lastY: 0,
+        color: '#000000',
+        mode: 'pen',
+        ctx: ctxP2,
+        canvas: canvasP2,
     }
 };
 
+let currentSubject = '';
+let currentDifficulty = '';
+let userId = null;
+let db = null;
+let auth = null;
 
-// =======================================================
-// 5. 화면 전환 및 도구 선택 이벤트 리스너
-// =======================================================
+// Firebase 및 인증 설정 함수
+async function initializeFirebase() {
+    // Firebase SDK import
+    const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js");
+    const { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
+    const { getFirestore, doc, setDoc, onSnapshot, collection, query, where, updateDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
+    const { setLogLevel } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
 
-// A. 주제 및 난이도 선택 (API 호출)
-let selectedSubject = '';
-let selectedDifficulty = '';
+    // setLogLevel('Debug'); // 디버그 로그 활성화
 
+    if (Object.keys(firebaseConfig).length === 0) {
+        console.error("Firebase config is missing.");
+        return;
+    }
+
+    const app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    auth = getAuth(app);
+
+    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+    if (initialAuthToken) {
+        await signInWithCustomToken(auth, initialAuthToken).catch(error => {
+            console.error("Error signing in with custom token:", error);
+            signInAnonymously(auth); // Fallback to anonymous sign-in
+        });
+    } else {
+        await signInAnonymously(auth);
+    }
+
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            userId = user.uid;
+            console.log("User authenticated. UID:", userId);
+        } else {
+            // 사용자 ID가 없는 경우 임시 ID 사용 ( Firestore 보안 규칙에 따라 변경될 수 있음)
+            userId = crypto.randomUUID(); 
+            console.log("User signed out or anonymous. Using temporary ID:", userId);
+        }
+        // 인증 완료 후 데이터 리스너 설정
+        setupDataListeners();
+    });
+}
+
+// 캔버스 초기화 및 스타일 설정 함수
+function setupCanvasContext(ctx) {
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = drawingState.p1.color; // 초기 색상은 검은색
+
+    // 배경을 흰색으로 초기화
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+}
+
+// 캔버스 초기화
+setupCanvasContext(ctxP1);
+setupCanvasContext(ctxP2);
+
+// 드로잉 함수
+function draw(e, state, isLocal) {
+    if (!state.isDrawing) return;
+
+    // 터치 이벤트 처리
+    const clientX = e.type.startsWith('touch') ? e.touches[0].clientX : e.clientX;
+    const clientY = e.type.startsWith('touch') ? e.touches[0].clientY : e.clientY;
+
+    const rect = state.canvas.getBoundingClientRect();
+    const scaleX = state.canvas.width / rect.width;
+    const scaleY = state.canvas.height / rect.height;
+
+    const currentX = (clientX - rect.left) * scaleX;
+    const currentY = (clientY - rect.top) * scaleY;
+
+    state.ctx.beginPath();
+    
+    // 지우개 모드
+    if (state.mode === 'eraser') {
+        state.ctx.globalCompositeOperation = 'destination-out';
+        state.ctx.lineWidth = 20; // 지우개 크기
+    } else {
+        // 펜 모드
+        state.ctx.globalCompositeOperation = 'source-over';
+        state.ctx.lineWidth = 5;
+        state.ctx.strokeStyle = state.color;
+    }
+    
+    state.ctx.moveTo(state.lastX, state.lastY);
+    state.ctx.lineTo(currentX, currentY);
+    state.ctx.stroke();
+
+    [state.lastX, state.lastY] = [currentX, currentY];
+
+    // 로컬 드로잉인 경우에만 Firestore에 저장
+    if (isLocal) {
+        saveDrawingData(state.canvas.id, {
+            x1: state.lastX,
+            y1: state.lastY,
+            x2: currentX,
+            y2: currentY,
+            color: state.color,
+            mode: state.mode,
+            lineWidth: state.mode === 'eraser' ? 20 : 5
+        });
+    }
+}
+
+// Firestore에 드로잉 데이터 저장 (실시간 동기화를 위해 단순화된 예시)
+function saveDrawingData(canvasId, data) {
+    // 실제 앱에서는 성능을 위해 드로잉 이벤트의 빈도를 조절해야 합니다.
+    // 여기서는 간단히 마지막 그리기 데이터를 저장합니다.
+    if (!db || !userId) return;
+
+    const docRef = doc(db, "artifacts", appId, "public", "data", "quiz_sessions", "shared_drawing");
+    
+    // 데이터 구조: { p1: [path_data], p2: [path_data] }
+    // 여기서는 동기화 데모를 위해 캔버스별 마지막 드로잉 좌표를 저장합니다.
+    
+    const canvasKey = canvasId === 'canvas-p1' ? 'p1_drawing' : 'p2_drawing';
+
+    setDoc(docRef, { 
+        [canvasKey]: JSON.stringify(data), // 드로잉 데이터를 문자열로 직렬화
+        timestamp: Date.now() 
+    }, { merge: true }).catch(e => console.error("Error saving drawing data: ", e));
+}
+
+
+// Firestore에서 드로잉 데이터 동기화
+function setupDataListeners() {
+    if (!db || !userId) {
+        console.warn("Firestore not initialized or userId not set.");
+        return;
+    }
+
+    const docRef = doc(db, "artifacts", appId, "public", "data", "quiz_sessions", "shared_drawing");
+
+    onSnapshot(docRef, (docSnap) => {
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            
+            // P1 데이터 동기화
+            if (data.p1_drawing) {
+                const drawingData = JSON.parse(data.p1_drawing);
+                drawRemote(drawingData, drawingState.p1);
+            }
+
+            // P2 데이터 동기화
+            if (data.p2_drawing) {
+                const drawingData = JSON.parse(data.p2_drawing);
+                drawRemote(drawingData, drawingState.p2);
+            }
+        }
+    }, (error) => {
+        console.error("Error listening to drawing data:", error);
+    });
+}
+
+// 원격 데이터를 캔버스에 그리는 함수
+function drawRemote(data, state) {
+    const ctx = state.ctx;
+    ctx.beginPath();
+    
+    // 지우개 모드 처리
+    if (data.mode === 'eraser') {
+        ctx.globalCompositeOperation = 'destination-out';
+    } else {
+        ctx.globalCompositeOperation = 'source-over';
+    }
+    
+    ctx.lineWidth = data.lineWidth;
+    ctx.strokeStyle = data.color;
+    
+    ctx.moveTo(data.x1, data.y1);
+    ctx.lineTo(data.x2, data.y2);
+    ctx.stroke();
+}
+
+
+// 이벤트 리스너 설정
+function setupCanvasEvents(canvas, player) {
+    const state = drawingState[player];
+    const ctx = state.ctx;
+    
+    // 마우스 및 터치 이벤트 핸들러
+    const startDrawing = (e) => {
+        e.preventDefault();
+        state.isDrawing = true;
+        
+        const clientX = e.type.startsWith('touch') ? e.touches[0].clientX : e.clientX;
+        const clientY = e.type.startsWith('touch') ? e.touches[0].clientY : e.clientY;
+
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+
+        [state.lastX, state.lastY] = [(clientX - rect.left) * scaleX, (clientY - rect.top) * scaleY];
+    };
+
+    const stopDrawing = () => {
+        state.isDrawing = false;
+        // Firestore에 최종 경로 저장 또는 상태 업데이트 (선택 사항)
+    };
+
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mouseout', stopDrawing);
+    canvas.addEventListener('mousemove', (e) => draw(e, state, true));
+
+    canvas.addEventListener('touchstart', startDrawing);
+    canvas.addEventListener('touchend', stopDrawing);
+    canvas.addEventListener('touchcancel', stopDrawing);
+    canvas.addEventListener('touchmove', (e) => draw(e, state, true));
+
+    // 툴 버튼 리스너
+    document.querySelectorAll(`.tool-btn[data-player="${player}"]`).forEach(button => {
+        button.addEventListener('click', (e) => {
+            document.querySelectorAll(`.tool-btn[data-player="${player}"]`).forEach(btn => btn.classList.remove('selected'));
+            button.classList.add('selected');
+
+            state.mode = button.dataset.mode || 'pen';
+            if (button.dataset.color) {
+                state.color = button.dataset.color;
+            }
+
+            if (button.classList.contains('clear-btn')) {
+                // 전체 지우기
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            }
+        });
+    });
+}
+
+// P1, P2 캔버스에 이벤트 리스너 설정
+setupCanvasEvents(canvasP1, 'p1');
+setupCanvasEvents(canvasP2, 'p2');
+
+
+// 메인 화면 UI 로직
 document.querySelectorAll('.subject-btn').forEach(button => {
-    button.addEventListener('click', (event) => {
-        selectedSubject = event.target.dataset.subject;
-        document.getElementById('difficulty-selection').style.display = 'block';
+    button.addEventListener('click', () => {
+        currentSubject = button.dataset.subject;
+        // 주제 버튼을 누르면 난이도 선택 화면 표시
+        document.querySelectorAll('.subject-btn').forEach(btn => btn.classList.remove('selected'));
+        button.classList.add('selected');
+
+        difficultySelection.style.display = 'block';
     });
 });
 
 document.querySelectorAll('.difficulty-btn').forEach(button => {
-    button.addEventListener('click', (event) => {
-        selectedDifficulty = event.target.dataset.difficulty;
-        startQuiz(selectedSubject, selectedDifficulty);
+    button.addEventListener('click', () => {
+        currentDifficulty = button.dataset.difficulty;
+        
+        // 난이도 버튼을 누르면 퀴즈 화면 표시
+        showQuizScreen();
     });
 });
 
+backToMainBtn.addEventListener('click', showMainScreen);
 
-function startQuiz(subject, difficulty) {
-    fetch(`/api/quiz/${subject}/${difficulty}`)
-        .then(response => response.json())
-        .then(problemData => {
-            if (problemData.error) {
-                alert(problemData.error);
-                return;
-            }
-            
-            // 화면 전환
-            document.getElementById('main-screen').style.display = 'none';
-            document.getElementById('quiz-screen').style.display = 'block';
-            
-            // 문제 이미지 URL 설정
-            problemImage.src = problemData.url; 
-            
-            // 캔버스 초기화
-            clearCanvas('p1');
-            clearCanvas('p2');
-            
-            // P1 캔버스 도구만 초기 검은색 펜으로 설정
-            document.querySelector('.drawing-tools [data-player="p1"]').click();
-        })
-        .catch(error => {
-            console.error('문제 로드 중 오류 발생:', error);
-            alert('문제 로드에 실패했습니다. 서버 상태를 확인해주세요.');
-        });
+function showQuizScreen() {
+    mainScreen.style.display = 'none';
+    quizScreen.style.display = 'block';
+    
+    // 현재 문제/난이도 표시 업데이트
+    let subjectText = '';
+    let difficultyText = '';
+
+    switch(currentSubject) {
+        case 'polynomial': subjectText = '다항식'; break;
+        case 'equation': subjectText = '방정식과 부등식'; break;
+        case 'permutation': subjectText = '순열과 조합'; break;
+        case 'matrix': subjectText = '행렬'; break;
+        case 'geometry': subjectText = '도형의 방정식'; break;
+        case 'set': subjectText = '집합과 명제'; break;
+        case 'function': subjectText = '함수와 그래프'; break;
+        default: subjectText = '미정';
+    }
+
+    switch(currentDifficulty) {
+        case 'hard': difficultyText = '상 (BOSS)'; break;
+        case 'medium': difficultyText = '중 (CHALLENGE)'; break;
+        case 'easy': difficultyText = '하 (TRAINING)'; break;
+        default: difficultyText = '미정';
+    }
+
+    currentSubjectDifficulty.textContent = `${subjectText} / ${difficultyText}`;
+    
+    // 문제 이미지를 임시로 표시 (실제로는 서버에서 받아와야 함)
+    // placeholder image: https://placehold.co/{width}x{height}/{background color in hex}/{text color in hex}?text={text}
+    const problemText = `${subjectText} ${difficultyText} 문제`;
+    problemImage.src = `https://placehold.co/800x250/007bff/ffffff?text=${encodeURIComponent(problemText)}`;
 }
 
-// B. 메인 화면으로 돌아가기 버튼
-document.getElementById('back-to-main').addEventListener('click', () => {
-    quizScreen.style.display = 'none';
+function showMainScreen() {
     mainScreen.style.display = 'block';
+    quizScreen.style.display = 'none';
     difficultySelection.style.display = 'none';
-});
 
-// C. 도구 선택 (펜 색상 및 지우개) 이벤트
-toolButtons.forEach(button => {
-    button.addEventListener('click', (event) => {
-        const player = event.target.dataset.player; // P1 또는 P2
-        const state = playerState[player];
-        
-        // 해당 플레이어의 도구 버튼만 선택 해제
-        document.querySelectorAll(`.drawing-tools [data-player="${player}"]`).forEach(btn => btn.classList.remove('selected'));
-        event.target.classList.add('selected');
-
-        const mode = event.target.dataset.mode;
-        const color = event.target.dataset.color;
-
-        state.mode = mode;
-        if (mode === 'pen') {
-            state.color = color;
-        }
-    });
-});
-
-// D. 전체 지우기 기능 (명령 송신 포함)
-clearButtons.forEach(button => {
-    button.addEventListener('click', (event) => {
-        const player = event.target.dataset.player;
-        
-        // 로컬 화면 지우기
-        clearCanvas(player);
-
-        // 💡 전체 지우기 명령을 서버에 전송 (어느 캔버스인지 정보 포함)
-        const clearData = { type: 'clear', player: player };
-        if (socket.readyState === WebSocket.OPEN) {
-            socket.send(JSON.stringify(clearData));
-        }
-    });
-});
+    // 선택 상태 초기화
+    document.querySelectorAll('.subject-btn').forEach(btn => btn.classList.remove('selected'));
+    currentSubject = '';
+    currentDifficulty = '';
+}
 
 
-// E. 드로잉 이벤트 리스너 연결 (P1, P2 캔버스 모두에 연결)
-[canvasP1, canvasP2].forEach(canvas => {
-    canvas.addEventListener('mousedown', startDrawing);
-    canvas.addEventListener('mousemove', draw);
-    canvas.addEventListener('mouseup', stopDrawing);
-    canvas.addEventListener('mouseout', stopDrawing);
-
-    canvas.addEventListener('touchstart', startDrawing);
-    canvas.addEventListener('touchmove', draw);
-    canvas.addEventListener('touchend', stopDrawing);
-});
+// 앱 초기화
+window.onload = initializeFirebase;
