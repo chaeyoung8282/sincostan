@@ -61,8 +61,9 @@ async function initializeFirebase() {
 
     // setLogLevel('Debug'); // 디버그 로그 활성화
 
-    if (Object.keys(firebaseConfig).length === 0) {
-        console.error("Firebase config is missing.");
+    // Firebase 설정이 비어 있는지 확인하는 로직 강화 및 에러 메시지 개선
+    if (!firebaseConfig || Object.keys(firebaseConfig).length === 0 || !firebaseConfig.projectId) {
+        console.error("FATAL ERROR: Firebase config is missing. The environment variable __firebase_config was empty or invalid. Please refresh the page or try restarting the app.");
         return;
     }
 
@@ -342,10 +343,22 @@ function showQuizScreen() {
 
     currentSubjectDifficulty.textContent = `${subjectText} / ${difficultyText}`;
     
-    // 문제 이미지를 임시로 표시 (실제로는 서버에서 받아와야 함)
-    // placeholder image: https://placehold.co/{width}x{height}/{background color in hex}/{text color in hex}?text={text}
+    // --- 문제 이미지 로딩 로직 ---
     const problemText = `${subjectText} ${difficultyText} 문제`;
-    problemImage.src = `https://placehold.co/800x250/007bff/ffffff?text=${encodeURIComponent(problemText)}`;
+    
+    // 1. 플레이스홀더 이미지 URL 설정 (문제 이미지를 동적으로 생성)
+    const placeholderUrl = `https://placehold.co/800x250/007bff/ffffff?text=${encodeURIComponent(problemText)}`;
+    
+    // 2. 이미지 로딩 에러 핸들러 설정
+    problemImage.onerror = () => {
+        console.error("Failed to load problem image from placehold.co. Falling back to simple text.");
+        // 에러 발생 시 단순한 fallback 이미지로 변경 (빨간색 배경)
+        problemImage.src = `https://placehold.co/800x250/dc3545/ffffff?text=문제+이미지+로딩+실패`;
+    };
+
+    // 3. 이미지 소스 설정 (로딩 시작)
+    problemImage.src = placeholderUrl;
+    // --- 문제 이미지 로딩 로직 끝 ---
 }
 
 function showMainScreen() {
@@ -357,6 +370,9 @@ function showMainScreen() {
     document.querySelectorAll('.subject-btn').forEach(btn => btn.classList.remove('selected'));
     currentSubject = '';
     currentDifficulty = '';
+    
+    // 이미지 에러 핸들러 초기화 (다음 문제 로드 시 다시 설정할 수 있도록)
+    problemImage.onerror = null; 
 }
 
 
