@@ -43,7 +43,65 @@ const drawingState = {
 
 let currentSubject = '';
 let currentDifficulty = '';
-let problemData = null; // 문제 데이터를 저장할 전역 변수
+
+/**
+ * --- 문제 데이터 ---
+ * problem.json 파일을 fetch하는 대신, 404 오류를 피하기 위해 내용을 직접 삽입합니다.
+ */
+const problemData = {
+  "polynomial": {
+    "hard": [
+      { "id": "p-h-1", "url": "/images/polynomial/hard_1.png" },
+      { "id": "p-h-2", "url": "/images/polynomial/hard_2.png" },
+      { "id": "p-h-3", "url": "/images/polynomial/hard_3.png" },
+      { "id": "p-h-4", "url": "/images/polynomial/hard_4.png" },
+      { "id": "p-h-5", "url": "/images/polynomial/hard_5.png" }
+    ],
+    "medium": [
+      { "id": "p-m-1", "url": "/images/polynomial/medium_1.png" },
+      { "id": "p-m-2", "url": "/images/polynomial/medium_2.png" },
+      { "id": "p-m-3", "url": "/images/polynomial/medium_3.png" },
+      { "id": "p-m-4", "url": "/images/polynomial/medium_4.png" },
+      { "id": "p-m-5", "url": "/images/polynomial/medium_5.png" }
+    ],
+    "easy": [
+      { "id": "p-e-1", "url": "/images/polynomial/easy_1.png" },
+      { "id": "p-e-2", "url": "/images/polynomial/easy_2.png" },
+      { "id": "p-e-3", "url": "/images/polynomial/easy_3.png" },
+      { "id": "p-e-4", "url": "/images/polynomial/easy_4.png" },
+      { "id": "p-e-5", "url": "/images/polynomial/easy_5.png" }
+    ],
+    "difficulty_map": {
+      "easy": "하 (TRAINING)",
+      "medium": "중 (CHALLENGE)",
+      "hard": "상 (BOSS)"
+    }
+  },
+  "equation": {
+    "hard": [], "medium": [], "easy": [],
+    "difficulty_map": { "easy": "하 (TRAINING)", "medium": "중 (CHALLENGE)", "hard": "상 (BOSS)" }
+  },
+  "permutation": {
+    "hard": [], "medium": [], "easy": [],
+    "difficulty_map": { "easy": "하 (TRAINING)", "medium": "중 (CHALLENGE)", "hard": "상 (BOSS)" }
+  },
+  "matrix": {
+    "hard": [], "medium": [], "easy": [],
+    "difficulty_map": { "easy": "하 (TRAINING)", "medium": "중 (CHALLENGE)", "hard": "상 (BOSS)" }
+  },
+  "geometry": {
+    "hard": [], "medium": [], "easy": [],
+    "difficulty_map": { "easy": "하 (TRAINING)", "medium": "중 (CHALLENGE)", "hard": "상 (BOSS)" }
+  },
+  "set": {
+    "hard": [], "medium": [], "easy": [],
+    "difficulty_map": { "easy": "하 (TRAINING)", "medium": "중 (CHALLENGE)", "hard": "상 (BOSS)" }
+  },
+  "function": {
+    "hard": [], "medium": [], "easy": [],
+    "difficulty_map": { "easy": "하 (TRAINING)", "medium": "중 (CHALLENGE)", "hard": "상 (BOSS)" }
+  }
+}; 
 
 // 주제 키와 표시 이름을 매핑
 const SUBJECT_NAMES = {
@@ -86,22 +144,7 @@ function resolveImagePath(logicalPath) {
 }
 
 
-// --- 문제 데이터 로딩 함수 ---
-async function fetchProblemData() {
-    try {
-        // 문제 데이터는 로컬의 problem.json 파일에서 로드합니다.
-        const response = await fetch('problem.json');
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        problemData = await response.json();
-        console.log("Problem data loaded successfully.");
-    } catch (error) {
-        console.error("Failed to load problem.json:", error);
-        problemData = {}; 
-    }
-}
-// ----------------------------
+// --- 캔버스 드로잉 및 도구 로직은 변경 없음 ---
 
 // 캔버스 초기화 및 스타일 설정 함수
 function setupCanvasContext(ctx) {
@@ -241,14 +284,13 @@ function setupMainUiEvents() {
 
 /**
  * 퀴즈 화면을 표시하고 문제를 로드합니다.
- * 이 함수는 (서버 통신을 시뮬레이션한 후) 로컬 problemData에서 문제 정보를 가져옵니다.
  */
 async function showQuizScreen() {
     mainScreen.style.display = 'none';
     quizScreen.style.display = 'block';
     
     // === 🚨 (더미) 서버에 문제 요청하는 로직 시뮬레이션 🚨 ===
-    // 현재는 서버가 없으므로 로컬 problemData를 사용하는 비동기 요청을 시뮬레이션합니다.
+    // 로컬 데이터를 사용하지만, 로딩 메시지와 딜레이는 유지합니다.
     const subjectName = SUBJECT_NAMES[currentSubject] || '주제';
     const difficultyName = problemData[currentSubject]?.difficulty_map[currentDifficulty] || '난이도';
     const loadingMessage = `${subjectName} / ${difficultyName} 문제를 서버에 요청 중...`;
@@ -260,17 +302,11 @@ async function showQuizScreen() {
     await new Promise(resolve => setTimeout(resolve, 500)); 
     // =======================================================
     
-    if (!problemData) {
-        currentSubjectDifficulty.textContent = "오류: 문제 데이터를 로드하지 못했습니다.";
-        problemImage.src = `https://placehold.co/800x250/dc3545/ffffff?text=문제+데이터+오류`;
-        return;
-    }
-
     const subjectData = problemData[currentSubject];
     const problemArray = subjectData ? subjectData[currentDifficulty] : null;
 
     if (!subjectData || !problemArray || problemArray.length === 0) {
-        // 이 메시지가 뜨는 것은 JSON 파일에 해당 주제/난이도 배열이 비어있거나 누락되었기 때문입니다.
+        // 이 메시지가 뜨는 것은 JSON 파일에 해당 주제/난이도 배열이 비어있기 때문입니다.
         currentSubjectDifficulty.textContent = "오류: 해당 주제/난이도의 문제 배열을 찾을 수 없습니다.";
         problemImage.src = `https://placehold.co/800x250/dc3545/ffffff?text=JSON+데이터+누락!`;
         return;
@@ -315,8 +351,8 @@ function showMainScreen() {
 }
 
 
-// 앱 초기화: 문제 데이터 로드 후 UI 이벤트 설정
+// 앱 초기화: 문제 데이터를 fetch할 필요 없이 바로 UI 이벤트 설정
 window.onload = async () => {
-    await fetchProblemData();
+    // 문제 데이터가 인라인으로 삽입되었으므로 fetchProblemData 호출 제거
     setupMainUiEvents();
 };
