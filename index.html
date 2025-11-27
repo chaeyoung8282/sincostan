@@ -79,6 +79,24 @@
         <button id="back-to-main" class="main-control-btn">메인으로 돌아가기</button>
     </div>
 
+<div id="quiz-screen" style="display: none;">
+        <button id="reveal-answer-btn" class="main-control-btn" style="display: none;">
+            정답 확인하기 (타이머 종료 후 활성화)
+        </button>
+        
+        <div id="answer-reveal-overlay" style="display: none;">
+            <div id="confetti-container"></div> 
+            
+            <div id="answer-content">
+                <h2>🎉 정답 공개! 🎉</h2>
+                <img id="answer-image" src="" alt="정답 이미지">
+                <button id="close-answer-btn" class="main-control-btn">닫기</button>
+            </div>
+        </div>
+
+        <button id="back-to-main" class="main-control-btn">메인으로 돌아가기</button>
+    </div>
+    
     <script src="script.js"></script>
 </body>
 </html>
