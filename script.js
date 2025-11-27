@@ -13,6 +13,8 @@ const currentSubjectDifficulty = document.getElementById('current-subject-diffic
 const problemImage = document.getElementById('problem-image');
 const backToMainBtn = document.getElementById('back-to-main');
 const difficultySelection = document.getElementById('difficulty-selection');
+// 🚨 [단일 타이머 요소]
+const timerDisplayTop = document.getElementById('timer-display-top'); 
 
 // 캔버스 해상도 설정
 const CANVAS_WIDTH = 550; 
@@ -24,41 +26,40 @@ canvasP2.width = CANVAS_WIDTH; canvasP2.height = CANVAS_HEIGHT;
 // 드로잉 상태를 저장할 객체
 const drawingState = {
     p1: {
-        isDrawing: false,
-        lastX: 0,
-        lastY: 0,
-        color: '#000000',
-        mode: 'pen',
-        ctx: ctxP1,
-        canvas: canvasP1,
-        id: 'p1' // Player ID 추가
+        isDrawing: false, lastX: 0, lastY: 0, color: '#000000',
+        mode: 'pen', ctx: ctxP1, canvas: canvasP1, id: 'p1' 
     },
     p2: {
-        isDrawing: false,
-        lastX: 0,
-        lastY: 0,
-        color: '#000000',
-        mode: 'pen',
-        ctx: ctxP2,
-        canvas: canvasP2,
-        id: 'p2' // Player ID 추가
+        isDrawing: false, lastX: 0, lastY: 0, color: '#000000',
+        mode: 'pen', ctx: ctxP2, canvas: canvasP2, id: 'p2' 
     }
 };
 
 let currentSubject = '';
 let currentDifficulty = '';
 let ws; // WebSocket 객체 변수
+let timerInterval; // 타이머 인터벌 ID
+let timeRemaining = 0; // 남은 시간 (초)
+
+/**
+ * 난이도별 시간 설정 (초 단위)
+ * 하: 2분 (120초), 중: 3분 (180초), 상: 5분 (300초)
+ */
+const DIFFICULTY_TIMES = {
+    'easy': 120, 
+    'medium': 180, 
+    'hard': 300 
+};
+
 
 /**
  * --- 문제 데이터 (difficulty_map만 사용) ---
- * 🚨 [수정] 공통수학 1 주제에서 'hard' 난이도 제거
  */
 const problemData = {
   "polynomial": {
     "difficulty_map": {
       "easy": "하 (TRAINING)",
       "medium": "중 (CHALLENGE)"
-      // "hard" 제거
     }
   },
   "equation": {
@@ -147,6 +148,9 @@ function executeDraw(data) {
 // 드로잉 함수
 function draw(e, state) {
     if (!state.isDrawing) return;
+    
+    // 타이머가 종료되었으면 그리기 방지
+    if (timeRemaining <= 0) return;
 
     // 터치 이벤트 처리
     const clientX = e.type.startsWith('touch') ? e.touches[0].clientX : e.clientX;
@@ -162,7 +166,7 @@ function draw(e, state) {
     // 캔버스에 그리기 전에 데이터를 서버로 보냅니다.
     sendWebSocketData({
         type: 'draw_data',
-        player: state.id, // 'p1' 또는 'p2'
+        player: state.id, 
         x0: state.lastX,
         y0: state.lastY,
         x1: currentX,
@@ -172,7 +176,7 @@ function draw(e, state) {
         lineWidth: state.mode === 'eraser' ? 20 : 5
     });
 
-    // 로컬 캔버스에 그리기 
+    // 로컬 캔버스에 그리기
     executeDraw({
         player: state.id, 
         x0: state.lastX,
@@ -195,6 +199,9 @@ function setupCanvasEvents(canvas, player) {
     // 마우스 및 터치 이벤트 핸들러
     const startDrawing = (e) => {
         e.preventDefault();
+        // 타이머가 종료되었으면 그리기 방지
+        if (timeRemaining <= 0) return;
+        
         state.isDrawing = true;
         
         const clientX = e.type.startsWith('touch') ? e.touches[0].clientX : e.clientX;
@@ -264,15 +271,15 @@ function setupMainUiEvents() {
             document.querySelectorAll('.subject-btn').forEach(btn => btn.classList.remove('selected'));
             button.classList.add('selected');
 
-            // 🚨 [수정] 난이도 '상' 버튼 표시/숨김 로직 추가
+            // 난이도 '상' 버튼 표시/숨김 로직 유지
             const basicSubjects = ['polynomial', 'equation', 'permutation', 'matrix'];
             const hardBtn = document.getElementById('difficulty-hard-btn');
             
             if (hardBtn) {
                 if (basicSubjects.includes(currentSubject)) {
-                    hardBtn.style.display = 'none'; // 공통수학 1은 '상' 난이도 숨김
+                    hardBtn.style.display = 'none'; 
                 } else {
-                    hardBtn.style.display = 'inline-block'; // 공통수학 2는 '상' 난이도 표시
+                    hardBtn.style.display = 'inline-block'; 
                 }
             }
 
@@ -292,6 +299,52 @@ function setupMainUiEvents() {
     // 교사가 '메인으로 돌아가기' 버튼을 누르면 서버로 명령을 보냅니다.
     backToMainBtn.addEventListener('click', () => showMainScreen(false));
 }
+
+
+// 타이머 업데이트 및 종료 로직
+function updateTimerDisplay(timeInSeconds) {
+    const minutes = Math.floor(timeInSeconds / 60);
+    const seconds = timeInSeconds % 60;
+    const timeString = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    
+    // 단일 타이머 요소 업데이트
+    timerDisplayTop.textContent = `남은 시간: ${timeString}`;
+    
+    // 시간이 10초 이하로 남으면 깜빡이는 클래스 추가
+    if (timeInSeconds <= 10 && timeInSeconds > 0) {
+        timerDisplayTop.classList.add('critical-time');
+    } else {
+        timerDisplayTop.classList.remove('critical-time');
+    }
+
+    if (timeInSeconds <= 0) {
+        // 시간이 0이 되면 타이머 종료 처리
+        clearInterval(timerInterval);
+        timerDisplayTop.textContent = "⏱️ 시간 종료! (00:00)";
+        timerDisplayTop.classList.remove('critical-time');
+        
+        // 문제 동기화와 마찬가지로, 교사 화면에서만 종료 명령을 보내 동기화
+        if (currentDifficulty && currentSubject) {
+             sendWebSocketData({ 
+                type: 'timer_finished',
+                difficulty: currentDifficulty 
+            });
+        }
+    }
+}
+
+// 타이머 시작 로직 (새 문제가 로드될 때 호출)
+function startTimer(durationInSeconds) {
+    clearInterval(timerInterval); // 기존 타이머 중지
+    timeRemaining = durationInSeconds;
+    updateTimerDisplay(timeRemaining);
+
+    timerInterval = setInterval(() => {
+        timeRemaining--;
+        updateTimerDisplay(timeRemaining);
+    }, 1000);
+}
+
 
 async function showQuizScreen() {
     mainScreen.style.display = 'none';
@@ -327,10 +380,12 @@ async function showQuizScreen() {
 }
 
 /**
- * 메인 화면 복귀 함수: 교사 버튼 클릭 시(isSync=false) 서버에 명령을 전송하고, 
- * 서버 동기화 명령 수신 시(isSync=true) 화면만 전환합니다.
+ * 메인 화면 복귀 함수
  */
 function showMainScreen(isSync) {
+    // 기존 타이머 중지
+    clearInterval(timerInterval);
+    timeRemaining = 0;
     
     // 교사가 직접 버튼을 누른 경우 (학생들에게 명령 전송)
     if (!isSync) {
@@ -351,7 +406,13 @@ function showMainScreen(isSync) {
     setupCanvasContext(ctxP1);
     setupCanvasContext(ctxP2);
     
-    // 이미지 에러 핸들러 초기화
+    // 타이머 디스플레이 초기화
+    const initialTime = DIFFICULTY_TIMES['easy']; // 예시로 하 난이도 초기 시간 표시
+    const initialTimeString = `${String(Math.floor(initialTime / 60)).padStart(2, '0')}:${String(initialTime % 60).padStart(2, '0')}`;
+    
+    timerDisplayTop.textContent = `남은 시간: ${initialTimeString}`;
+    timerDisplayTop.classList.remove('critical-time');
+    
     problemImage.onerror = null; 
 }
 
@@ -361,7 +422,6 @@ function syncQuizScreen(problemData, subject, difficulty) {
     currentDifficulty = difficulty;
 
     const subjectName = SUBJECT_NAMES[subject] || '주제';
-    // 🚨 [수정] difficulty_map에서 현재 난이도 이름을 안전하게 가져옵니다.
     const difficultyName = problemData[subject]?.difficulty_map[difficulty] || '난이도';
 
     mainScreen.style.display = 'none';
@@ -381,6 +441,10 @@ function syncQuizScreen(problemData, subject, difficulty) {
     };
     
     problemImage.src = actualImagePath;
+    
+    // 새 문제 로드 시 타이머 시작 및 동기화
+    const duration = DIFFICULTY_TIMES[difficulty] || 120; // 기본값 2분
+    startTimer(duration);
 }
 
 
@@ -421,6 +485,14 @@ function setupWebSocket() {
             else if (data.type === 'go_to_main_sync') {
                 console.log('📢 서버로부터 메인 화면 복귀 명령 수신.');
                 showMainScreen(true); // 동기화 플래그를 true로 전달
+            }
+            // 5. 타이머 종료 명령을 받으면
+            else if (data.type === 'timer_finished_sync') {
+                console.log('📢 서버로부터 타이머 종료 명령 수신.');
+                // 이미 로컬 타이머는 0이 되었을 것이므로, 최종 상태 업데이트만 실행
+                clearInterval(timerInterval);
+                timeRemaining = 0;
+                updateTimerDisplay(0); 
             }
             
         } catch (e) {
