@@ -14,13 +14,13 @@ const difficultySelection = document.getElementById('difficulty-selection');
 const timerDisplayTop = document.getElementById('timer-display-top'); // 상단 타이머
 const timerDisplayBottom = document.getElementById('timer-display-bottom'); // 하단 타이머
 
-// 🚨 [추가] 정답 공개 관련 요소
+// 정답 공개 관련 요소
 const revealAnswerBtn = document.getElementById('reveal-answer-btn');
 const answerRevealOverlay = document.getElementById('answer-reveal-overlay');
 const answerImage = document.getElementById('answer-image');
 const closeAnswerBtn = document.getElementById('close-answer-btn');
 const confettiContainer = document.getElementById('confetti-container');
-// 🚨 [추가] '상 (BOSS)' 난이도 버튼 요소
+// '상 (BOSS)' 난이도 버튼 요소
 const hardDifficultyBtn = document.querySelector('.difficulty-btn[data-difficulty="hard"]');
 
 
@@ -219,7 +219,7 @@ function setupToolEvents() {
 }
 
 // =========================================================
-// 2. 타이머 로직 (기존과 동일)
+// 2. 타이머 로직
 // =========================================================
 
 function startTimer(durationInSeconds) {
@@ -279,7 +279,7 @@ function updateTimerDisplay(timeInSeconds) {
 
 
 // =========================================================
-// 3. 문제 로딩 및 동기화 로직
+// 3. 문제 로딩 및 동기화 로직 (AJAX 및 WebSocket)
 // =========================================================
 
 const difficultyMap = {
@@ -333,16 +333,34 @@ async function loadNewQuiz(subject, difficulty) {
 
 /**
  * 퀴즈 화면에 문제 정보 및 이미지 로드
+ * @param {object} problemResponse 서버로부터 받은 응답 객체
+ * @param {string} subject 현재 주제
+ * @param {string} difficulty 현재 난이도
  */
-function syncQuizScreen(problemData, subject, difficulty) {
-    const subjectName = problemData.subject_name;
+function syncQuizScreen(problemResponse, subject, difficulty) {
+    // 🚨 [수정] 서버 응답 객체의 구조를 확인하여 문제 데이터를 가져옵니다.
+    // server.js에서 nextProblem, remainingProblems 등을 포함하는 객체를 보내므로 구조를 확인합니다.
+    const problemData = problemResponse.nextProblem;
+    const remainingProblemsCount = problemResponse.remainingProblems ? problemResponse.remainingProblems.length : 0;
+    
+    if (!problemData) {
+        // 서버에서 문제가 없을 때 problemResponse.error를 보냈을 것이므로, 이 조건은 대부분 발생하지 않음.
+        // 하지만 안전을 위해 추가
+        console.error("문제 데이터가 유효하지 않습니다.", problemResponse);
+        alert("더 이상 남은 문제가 없습니다.");
+        showMainScreen();
+        return;
+    }
+
+    const subjectName = problemResponse.subjectName; // 서버 응답에서 subjectName을 가져옴
     const difficultyName = difficultyMap[difficulty].name;
     const problemUrl = problemData.url;
     
     currentProblemId = problemData.id;
     currentSubject = subject;
     currentDifficulty = difficulty;
-    currentProblemArray = problemData.remaining_problems; // 남은 문제 수 업데이트
+    // 🚨 [수정] 남은 문제 수 업데이트 로직
+    currentProblemArray = problemResponse.remainingProblems || []; 
     
     // 1. 화면 전환 및 캔버스 클리어
     quizScreen.style.display = 'flex';
@@ -367,7 +385,8 @@ function syncQuizScreen(problemData, subject, difficulty) {
     currentAnswerUrl = problemData.answer_url; 
     
     // 현재 문제/난이도 표시 업데이트
-    currentSubjectDifficulty.textContent = `${subjectName} / ${difficultyName} (ID: ${problemData.id}) (남은 문제: ${currentProblemArray.length}개)`;
+    // 🚨 [수정] 남은 문제 수 표시
+    currentSubjectDifficulty.textContent = `${subjectName} / ${difficultyName} (ID: ${problemData.id}) (남은 문제: ${remainingProblemsCount}개)`;
     
     // 3. 이미지 로딩 에러 핸들러 설정
     problemImage.onerror = () => {
@@ -389,7 +408,7 @@ function syncQuizScreen(problemData, subject, difficulty) {
 
 
 // =========================================================
-// 4. 메인 UI 이벤트 및 정답 로직
+// 4. 메인 UI 이벤트 및 정답 로직 (기존과 동일)
 // =========================================================
 
 function showMainScreen() {
@@ -467,7 +486,7 @@ function setupMainUiEvents() {
             e.target.classList.add('selected');
             currentSubject = e.target.getAttribute('data-subject');
             
-            // 🚨 [수정] 난이도 버튼 가시성 제어 로직
+            // 난이도 버튼 가시성 제어 로직
             if (hardDifficultyBtn) {
                 if (basicSubjects.includes(currentSubject)) {
                     // BASIC STAGE는 '상 (BOSS)' 난이도를 숨김
@@ -547,7 +566,9 @@ function setupWebSocket() {
                 // 다른 클라이언트의 캔버스 지우기를 동기화합니다.
                 drawingState[data.playerId].ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
                 break;
-            case 'quiz_start':
+            // 🚨 [수정] 퀴즈 시작 및 새 문제 로드를 동일하게 처리
+            case 'quiz_start': 
+            case 'new_quiz_problem': 
                 // 교사 클라이언트가 시작한 퀴즈를 동기화합니다.
                 syncQuizScreen(data.problemData, data.subject, data.difficulty);
                 break;
