@@ -304,3 +304,128 @@ function showMainScreen() {
 window.onload = async () => {
     setupMainUiEvents();
 };
+
+
+// script.js (파일 하단)
+
+let ws; // WebSocket 객체 변수
+
+/**
+ * WebSocket 연결을 설정하고 이벤트 핸들러를 등록합니다.
+ */
+function setupWebSocket() {
+    // 현재 접속 환경의 프로토콜을 사용하여 WebSocket 주소 설정
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.host;
+    
+    ws = new WebSocket(`${protocol}//${host}`);
+
+    ws.onopen = () => {
+        console.log('✅ WebSocket 연결 성공. 서버와 통신 준비 완료.');
+    };
+
+    ws.onmessage = (event) => {
+        try {
+            const data = JSON.parse(event.data);
+            
+            // 🚨 [핵심 동기화 로직] 서버에서 새로운 문제 출제 메시지를 받으면
+            if (data.type === 'new_quiz_problem') {
+                console.log('📢 서버로부터 문제 동기화 메시지 수신:', data.problem.id);
+                // 모든 클라이언트의 화면을 받은 문제로 전환합니다.
+                syncQuizScreen(data.problem, data.subject, data.difficulty);
+            }
+        } catch (e) {
+            console.error('WebSocket 메시지 파싱 오류:', e);
+        }
+    };
+
+    ws.onclose = () => {
+        console.warn('❌ WebSocket 연결이 끊어졌습니다. 5초 후 재접속 시도.');
+        // 연결이 끊어지면 자동으로 재접속 시도
+        setTimeout(setupWebSocket, 5000); 
+    };
+
+    ws.onerror = (err) => {
+        console.error('WebSocket 오류 발생:', err);
+    };
+}
+
+/**
+ * 서버에서 전송된 문제 정보로 화면을 동기화합니다.
+ */
+function syncQuizScreen(problemData, subject, difficulty) {
+    // 난이도, 주제 전역 변수 업데이트 (클릭 이벤트가 없었을 경우 대비)
+    currentSubject = subject;
+    currentDifficulty = difficulty;
+
+    const subjectName = SUBJECT_NAMES[subject] || '주제';
+    const difficultyName = problemData[subject]?.difficulty_map[difficulty] || '난이도';
+
+    mainScreen.style.display = 'none';
+    quizScreen.style.display = 'block';
+
+    const actualImagePath = problemData.url;
+    
+    currentSubjectDifficulty.textContent = `${subjectName} / ${difficultyName} (ID: ${problemData.id}) [동기화됨]`;
+    
+    // 이미지 로딩 에러 핸들러 설정
+    problemImage.onerror = () => {
+        console.error(`동기화된 이미지 로드 실패: ${actualImagePath}`); 
+        problemImage.src = `https://placehold.co/800x250/dc3545/ffffff?text=동기화+실패+경로:+${actualImagePath}`;
+    };
+    
+    problemImage.src = actualImagePath;
+}
+
+
+// 앱 초기화 로직 변경
+window.onload = async () => {
+    setupMainUiEvents();
+    setupWebSocket(); // 💡 WebSocket 연결을 시작합니다.
+};
+
+
+/**
+ * 💡 기존 showQuizScreen 함수 수정: 
+ * API 요청이 성공하면 (교사 태블릿에서), 
+ * 서버가 이미 WebSocket으로 브로드캐스팅했기 때문에 
+ * 이 함수 내에서는 직접 화면을 바꾸지 않고, 
+ * 서버 응답에 맞춰 브로드캐스팅을 기다리도록 로직을 간소화할 수 있습니다.
+ * (이미 이전 단계에서 수정된 버전의 script.js를 가정하고 이 로직을 작성합니다.)
+ */
+async function showQuizScreen() {
+    mainScreen.style.display = 'none';
+    quizScreen.style.display = 'block';
+    
+    const subjectName = SUBJECT_NAMES[currentSubject] || '주제';
+    const difficultyName = problemData[currentSubject]?.difficulty_map[currentDifficulty] || '난이도';
+    
+    const loadingMessage = `${subjectName} / ${difficultyName} 문제를 서버에 요청 중...`;
+    
+    currentSubjectDifficulty.textContent = loadingMessage;
+    problemImage.src = `https://placehold.co/800x250/3498db/ffffff?text=${encodeURIComponent('서버에 문제 요청 중...')}`;
+    
+    try {
+        const url = `/api/quiz/${currentSubject}/${currentDifficulty}`;
+        console.log(`[문제 시스템] 서버 API 호출 시도: ${url}`);
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        }
+        
+        // 💡 [수정 사항] 서버 API 응답을 기다리지 않고, 
+        // 서버가 곧바로 WebSocket으로 브로드캐스팅할 것이므로 
+        // 클라이언트(교사 태블릿 포함)는 syncQuizScreen 함수를 통해 동기화됩니다.
+        // 여기서는 API 요청 성공만 확인하고 바로 종료합니다.
+        console.log('API 요청 성공. WebSocket 동기화 대기 중...');
+
+    } catch (e) {
+        const errorMessage = e.message || "알 수 없는 서버 오류";
+        currentSubjectDifficulty.textContent = `오류: 문제를 로드하는 데 실패했습니다. (${errorMessage})`;
+        problemImage.src = `https://placehold.co/800x250/dc3545/ffffff?text=로딩+실패!`;
+        console.error("문제 로드 API 실패:", e);
+        return;
+    }
+}
