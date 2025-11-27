@@ -20,6 +20,9 @@ const answerRevealOverlay = document.getElementById('answer-reveal-overlay');
 const answerImage = document.getElementById('answer-image');
 const closeAnswerBtn = document.getElementById('close-answer-btn');
 const confettiContainer = document.getElementById('confetti-container');
+// 🚨 [추가] '상 (BOSS)' 난이도 버튼 요소
+const hardDifficultyBtn = document.querySelector('.difficulty-btn[data-difficulty="hard"]');
+
 
 // 캔버스 해상도 설정 (내부 드로잉 해상도)
 const CANVAS_WIDTH = 550; 
@@ -59,10 +62,10 @@ let timerInterval = null; // 타이머를 제어할 인터벌 ID
 let initialTime = 0; // 초기 설정 시간 (난이도별로 다름)
 let timeRemaining = 0; // 남은 시간
 let ws = null; // WebSocket 연결 객체
-let currentAnswerUrl = ''; // 🚨 [추가] 현재 문제의 정답 URL을 저장할 변수
+let currentAnswerUrl = ''; // 현재 문제의 정답 URL을 저장할 변수
 
 // =========================================================
-// 1. 드로잉 및 캔버스 관련 로직
+// 1. 드로잉 및 캔버스 관련 로직 (기존과 동일)
 // =========================================================
 
 /**
@@ -216,7 +219,7 @@ function setupToolEvents() {
 }
 
 // =========================================================
-// 2. 타이머 로직
+// 2. 타이머 로직 (기존과 동일)
 // =========================================================
 
 function startTimer(durationInSeconds) {
@@ -261,7 +264,7 @@ function updateTimerDisplay(timeInSeconds) {
         timerDisplayTop.textContent = "⏱️ 시간 종료! (00:00)";
         timerDisplayTop.classList.remove('critical-time');
         
-        // 🚨 [추가] 타이머 종료 시 정답 확인 버튼 표시
+        // 타이머 종료 시 정답 확인 버튼 표시
         revealAnswerBtn.style.display = 'inline-block';
         
         // 문제 동기화와 마찬가지로, 교사 화면에서만 종료 명령을 보내 동기화
@@ -276,7 +279,7 @@ function updateTimerDisplay(timeInSeconds) {
 
 
 // =========================================================
-// 3. 문제 로딩 및 동기화 로직 (AJAX 및 WebSocket)
+// 3. 문제 로딩 및 동기화 로직
 // =========================================================
 
 const difficultyMap = {
@@ -349,20 +352,18 @@ function syncQuizScreen(problemData, subject, difficulty) {
 
     // 2. 문제 이미지 로딩
     let actualImagePath;
-    // problems.json에 system_file_name이 있으면 그것을 직접 사용 (임시 대응 로직)
     const systemFileName = problemData.system_file_name;
 
     // 'easy' 난이도이면서 systemFileName이 있는 경우 (특정 서버 설정에 대한 임시 대응)
     if (difficulty === 'easy' && systemFileName) {
         // 서버의 파일 시스템에서 직접 파일을 로드하는 경로를 사용합니다.
         actualImagePath = resolveImagePath(systemFileName);
-        // console.warn(`[DEBUG] 쉬운 문제 ID(${problemData.id})에 대해 시스템 파일명(${systemFileName})으로 직접 로드 시도.`);
     } else {
         // 다른 문제들은 기존 로직(problems.json에 등록된 url) 사용
         actualImagePath = resolveImagePath(problemUrl); 
     }
     
-    // 🚨 [추가] 정답 이미지 URL 저장
+    // 정답 이미지 URL 저장
     currentAnswerUrl = problemData.answer_url; 
     
     // 현재 문제/난이도 표시 업데이트
@@ -381,7 +382,7 @@ function syncQuizScreen(problemData, subject, difficulty) {
     const duration = difficultyMap[difficulty].time;
     startTimer(duration);
 
-    // 🚨 [추가] 새 문제 시작 시 정답 버튼 숨기기
+    // 새 문제 시작 시 정답 버튼 숨기기
     revealAnswerBtn.style.display = 'none'; 
     answerRevealOverlay.style.display = 'none'; // 오버레이 숨기기
 }
@@ -416,7 +417,7 @@ function launchConfetti() {
         c.style.animationDelay = `${Math.random() * 2}s`; 
         c.style.transform = `translateY(${Math.random() * -10}vh)`; 
         
-        // 색상 다양화 (CSS에서 처리했지만, JS로도 가능)
+        // 색상 다양화
         const colors = ['#ff00ff', '#ffeb3b', '#00bcd4', '#4caf50', '#ff5722'];
         c.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
         
@@ -456,12 +457,26 @@ function showAnswer() {
  * 메인 화면 UI 이벤트 설정
  */
 function setupMainUiEvents() {
+    // 공통수학 1 (BASIC STAGE)에 해당하는 주제 목록
+    const basicSubjects = ['polynomial', 'equation', 'permutation', 'matrix']; 
+
     // 주제 버튼 클릭 이벤트
     document.querySelectorAll('.subject-btn').forEach(button => {
         button.addEventListener('click', (e) => {
             document.querySelectorAll('.subject-btn').forEach(btn => btn.classList.remove('selected'));
             e.target.classList.add('selected');
             currentSubject = e.target.getAttribute('data-subject');
+            
+            // 🚨 [수정] 난이도 버튼 가시성 제어 로직
+            if (hardDifficultyBtn) {
+                if (basicSubjects.includes(currentSubject)) {
+                    // BASIC STAGE는 '상 (BOSS)' 난이도를 숨김
+                    hardDifficultyBtn.style.display = 'none';
+                } else {
+                    // ADVANCED STAGE (나머지)는 '상 (BOSS)' 난이도를 표시
+                    hardDifficultyBtn.style.display = 'inline-block';
+                }
+            }
             
             // 난이도 선택 화면 표시
             difficultySelection.style.display = 'block';
@@ -544,14 +559,14 @@ function setupWebSocket() {
                 revealAnswerBtn.style.display = 'inline-block';
                 break;
             case 'answer_revealed':
-                // 🚨 [추가] 정답 공개 상태를 동기화합니다.
+                // 정답 공개 상태를 동기화합니다.
                 currentAnswerUrl = data.answerUrl; // 정답 URL 동기화 (혹시 모를 상황 대비)
                 answerImage.src = currentAnswerUrl;
                 answerRevealOverlay.style.display = 'flex';
                 launchConfetti(); // 효과 실행
                 break;
             case 'answer_closed':
-                // 🚨 [추가] 정답 오버레이 닫기 상태를 동기화합니다.
+                // 정답 오버레이 닫기 상태를 동기화합니다.
                 answerRevealOverlay.style.display = 'none';
                 confettiContainer.innerHTML = '';
                 break;
@@ -597,7 +612,7 @@ window.onload = async () => {
     // 메인 UI 버튼 리스너 설정 (주제/난이도/메인으로 돌아가기)
     setupMainUiEvents();
     
-    // 🚨 [추가] 정답 이벤트 설정 (정답 확인, 닫기 버튼)
+    // 정답 이벤트 설정 (정답 확인, 닫기 버튼)
     setupAnswerEvents(); 
     
     // WebSocket 연결 시작
