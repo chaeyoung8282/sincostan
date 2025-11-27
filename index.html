@@ -9,14 +9,10 @@
 
 <body>
 
-    <!-- 1. 메인 화면: 주제 및 난이도 선택 -->
     <div id="main-screen">
         <h1>스트릿 매쓰 파이터</h1>
         <h2 class="subtitle">난이도별 수학 문제 챌린지</h2>
 
-        <!-- 기존 #game-ui-bar (코인, 하트) 삭제 -->
-
-        <!-- 공통수학 1 그룹 -->
         <div class="subject-group">
             <h2>⚔️ 공통수학 1 : BASIC STAGE</h2>
             <div id="subject-buttons-group-1">
@@ -27,7 +23,6 @@
             </div>
         </div>
 
-        <!-- 공통수학 2 그룹 -->
         <div class="subject-group">
             <h2>🛡️ 공통수학 2 : ADVANCED STAGE</h2>
             <div id="subject-buttons-group-2">
@@ -39,28 +34,24 @@
 
         <div id="difficulty-selection" style="display: none;">
             <h2>난이도 선택</h2>
-            <button class="difficulty-btn" data-difficulty="hard">상 : BOSS</button>
+            <button class="difficulty-btn" data-difficulty="hard" id="difficulty-hard-btn">상 : BOSS</button>
             <button class="difficulty-btn" data-difficulty="medium">중 : CHALLENGE</button>
             <button class="difficulty-btn" data-difficulty="easy">하 : TRAINING</button>
         </div>
     </div>
 
-    <!-- 2. 문제 풀이 화면: 캔버스 및 도구 (초기에는 숨김) -->
     <div id="quiz-screen" style="display: none;">
         <div id="problem-area">
             <h2>문제 : <span id="current-subject-difficulty"></span></h2>
             <img id="problem-image" src="" alt="수학 문제 이미지">
         </div>
 
-        <!-- 풀이 영역 컨테이너 -->
         <div id="solving-container">
             
-            <!-- === 왼쪽 풀이 공간 (Player 1) === -->
             <div class="player-writing-area">
                 <h3>풀이 공간</h3>
                 <canvas id="canvas-p1" class="writing-canvas"></canvas>
                 
-                <!-- 드로잉 도구 영역 (P1용) -->
                 <div class="drawing-tools">
                     <button class="tool-btn selected" data-color="#000000" data-mode="pen" data-player="p1">⚫️ 검정 펜</button>
                     <button class="tool-btn" data-color="#ff0000" data-mode="pen" data-player="p1">🔴 빨강 펜</button>
@@ -69,12 +60,10 @@
                 </div>
             </div>
 
-            <!-- === 오른쪽 풀이 공간 (Player 2) === -->
             <div class="player-writing-area">
                 <h3>풀이 공간</h3>
                 <canvas id="canvas-p2" class="writing-canvas"></canvas>
                 
-                <!-- 드로잉 도구 영역 (P2용) -->
                 <div class="drawing-tools">
                     <button class="tool-btn selected" data-color="#000000" data-mode="pen" data-player="p2">⚫️ 검정 펜</button>
                     <button class="tool-btn" data-color="#ff0000" data-mode="pen" data-player="p2">🔴 빨강 펜</button>
@@ -88,7 +77,6 @@
         <button id="back-to-main" class="main-control-btn">메인으로 돌아가기</button>
     </div>
 
-    <!-- 3. JavaScript 파일 연결 -->
     <script src="script.js"></script>
 </body>
 </html>
