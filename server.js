@@ -7,7 +7,7 @@ const path = require('path');
 
 const PORT = process.env.PORT || 8080;
 
-// 💡 1. problems.json 파일에서 문제 데이터를 읽어옵니다.
+// 💡 1. problems.json 파일에서 문제 데이터를 읽어옵니다. (수정된 JSON 파일이 로드됨)
 const problemsData = JSON.parse(fs.readFileSync(path.join(__dirname, 'problems.json'), 'utf8'));
 // 💡 2. 출제된 문제를 기록할 변수 (서버 재시작 시 초기화됩니다.)
 const solvedProblems = {}; 
@@ -25,7 +25,7 @@ wss.on('connection', (ws) => {
             const data = JSON.parse(message.toString());
             console.log(`[WS] 클라이언트로부터 데이터 수신: ${data.type}`);
             
-            // 🚨 [새로운 로직] 드로잉 및 지우기 데이터를 받아서 모든 클라이언트에게 브로드캐스팅합니다.
+            // 🚨 [동기화 로직] 드로잉 및 지우기 데이터를 받아서 모든 클라이언트에게 브로드캐스팅합니다.
             if (data.type === 'draw_data' || data.type === 'clear_canvas') {
                 clients.forEach(client => {
                     // 데이터 전송한 클라이언트 자신 포함 모든 클라이언트에게 브로드캐스트
@@ -35,10 +35,10 @@ wss.on('connection', (ws) => {
                 });
             }
             
-            // 🚨 [새로운 로직] 교사의 메인 화면 전환 명령을 받아서 브로드캐스팅합니다.
+            // 🚨 [동기화 로직] 교사의 메인 화면 전환 명령을 받아서 브로드캐스팅합니다.
             if (data.type === 'go_to_main') {
                 const broadcastMessage = JSON.stringify({
-                    type: 'go_to_main_sync' // 동기화 명령으로 이름 변경
+                    type: 'go_to_main_sync' // 동기화 명령
                 });
                 clients.forEach(client => {
                     if (client.readyState === WebSocket.OPEN) {
@@ -73,13 +73,14 @@ const server = http.createServer((req, res) => {
         const subject = parts[3]; 
         const difficulty = parts[4];
         
-        // 문제 데이터가 존재하는지 확인
+        // 문제 데이터가 존재하는지 확인 (problems.json의 변경사항이 여기서 반영됨)
         if (problemsData[subject] && problemsData[subject][difficulty]) {
             const problemList = problemsData[subject][difficulty];
             const key = `${subject}-${difficulty}`;
             
             const publishedIds = solvedProblems[key] || [];
 
+            // 출제되지 않은 문제만 필터링
             let availableProblems = problemList.filter(p => !publishedIds.includes(p.id));
 
             let nextProblem;
@@ -96,6 +97,7 @@ const server = http.createServer((req, res) => {
                 const randomIndex = Math.floor(Math.random() * availableProblems.length);
                 nextProblem = availableProblems[randomIndex];
             } else {
+                // 문제 목록이 비어 있거나, (수정된 JSON에서 hard가 제거된 경우) 해당 난이도에 문제가 없을 경우
                 res.writeHead(404, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ error: `문제 데이터 없음: ${subject}/${difficulty}` }));
                 return;
@@ -126,8 +128,9 @@ const server = http.createServer((req, res) => {
             res.end(JSON.stringify(nextProblem));
             return;
         } else {
+            // 주제/난이도 데이터 없음 (예: 공통수학 1에서 hard 난이도를 요청한 경우)
             res.writeHead(404, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: `주제 또는 난이도 데이터가 problems.json에 존재하지 않음: ${subject}/${difficulty}` }));
+            res.end(JSON.stringify({ error: `problems.json에 해당 주제/난이도 데이터가 존재하지 않음: ${subject}/${difficulty}` }));
             return;
         }
     }
