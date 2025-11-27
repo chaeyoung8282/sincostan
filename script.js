@@ -31,6 +31,7 @@ const drawingState = {
         mode: 'pen',
         ctx: ctxP1,
         canvas: canvasP1,
+        id: 'p1' // Player ID 추가
     },
     p2: {
         isDrawing: false,
@@ -40,15 +41,16 @@ const drawingState = {
         mode: 'pen',
         ctx: ctxP2,
         canvas: canvasP2,
+        id: 'p2' // Player ID 추가
     }
 };
 
 let currentSubject = '';
 let currentDifficulty = '';
+let ws; // WebSocket 객체 변수
 
 /**
- * --- 문제 데이터 (클라이언트 측에서 서버로 요청하는 정보만 남김) ---
- * 서버의 problems.json에 정의된 난이도 맵과 주제 이름만 유지합니다.
+ * --- 문제 데이터 ---
  */
 const problemData = {
   "polynomial": {
@@ -106,6 +108,41 @@ function setupCanvasContext(ctx) {
 setupCanvasContext(ctxP1);
 setupCanvasContext(ctxP2);
 
+/**
+ * 💡 새로운 함수: WebSocket으로 데이터를 전송합니다.
+ */
+function sendWebSocketData(data) {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify(data));
+    }
+}
+
+/**
+ * 💡 새로운 함수: 수신된 드로잉 데이터를 캔버스에 그립니다. (동기화 용)
+ */
+function executeDraw(data) {
+    const state = drawingState[data.player];
+    const ctx = state.ctx;
+
+    // 지우개 모드 설정
+    if (data.mode === 'eraser') {
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.lineWidth = data.lineWidth;
+    } else {
+        // 펜 모드 설정
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.lineWidth = data.lineWidth;
+        ctx.strokeStyle = data.color;
+    }
+    
+    // 그리기 실행
+    ctx.beginPath();
+    ctx.moveTo(data.x0, data.y0);
+    ctx.lineTo(data.x1, data.y1);
+    ctx.stroke();
+}
+
+
 // 드로잉 함수
 function draw(e, state) {
     if (!state.isDrawing) return;
@@ -121,22 +158,31 @@ function draw(e, state) {
     const currentX = (clientX - rect.left) * scaleX;
     const currentY = (clientY - rect.top) * scaleY;
 
-    state.ctx.beginPath();
-    
-    // 지우개 모드
-    if (state.mode === 'eraser') {
-        state.ctx.globalCompositeOperation = 'destination-out';
-        state.ctx.lineWidth = 20; // 지우개 크기
-    } else {
-        // 펜 모드
-        state.ctx.globalCompositeOperation = 'source-over';
-        state.ctx.lineWidth = 5;
-        state.ctx.strokeStyle = state.color;
-    }
-    
-    state.ctx.moveTo(state.lastX, state.lastY);
-    state.ctx.lineTo(currentX, currentY);
-    state.ctx.stroke();
+    // 🚨 [수정] 캔버스에 그리기 전에 데이터를 서버로 보냅니다.
+    // 서버는 이 데이터를 다른 모든 클라이언트(교사 화면 포함)로 브로드캐스트합니다.
+    sendWebSocketData({
+        type: 'draw_data',
+        player: state.id, // 'p1' 또는 'p2'
+        x0: state.lastX,
+        y0: state.lastY,
+        x1: currentX,
+        y1: currentY,
+        color: state.color,
+        mode: state.mode,
+        lineWidth: state.mode === 'eraser' ? 20 : 5
+    });
+
+    // 로컬 캔버스에 그리기 (이전 로직과 동일)
+    executeDraw({
+        player: state.id, 
+        x0: state.lastX,
+        y0: state.lastY,
+        x1: currentX,
+        y1: currentY,
+        color: state.color,
+        mode: state.mode,
+        lineWidth: state.mode === 'eraser' ? 20 : 5
+    });
 
     [state.lastX, state.lastY] = [currentX, currentY];
 }
@@ -162,7 +208,10 @@ function setupCanvasEvents(canvas, player) {
     };
 
     const stopDrawing = () => {
-        state.isDrawing = false;
+        // 🚨 [수정] 현재 플레이어가 드로잉 중이었다면 상태를 false로 변경
+        if (state.isDrawing) {
+            state.isDrawing = false;
+        }
     };
 
     canvas.addEventListener('mousedown', startDrawing);
@@ -187,10 +236,16 @@ function setupCanvasEvents(canvas, player) {
             }
 
             if (button.classList.contains('clear-btn')) {
-                // 전체 지우기
+                // 전체 지우기 (로컬 실행)
                 ctx.globalCompositeOperation = 'source-over';
                 ctx.fillStyle = '#ffffff';
                 ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+                
+                // 🚨 [추가] 전체 지우기 명령을 서버로 전송하여 동기화
+                sendWebSocketData({ 
+                    type: 'clear_canvas', 
+                    player: player 
+                });
             }
         });
     });
@@ -223,12 +278,12 @@ function setupMainUiEvents() {
         });
     });
 
-    backToMainBtn.addEventListener('click', showMainScreen);
+    // 🚨 [수정] 교사가 '메인으로 돌아가기' 버튼을 누르면 서버로 명령을 보냅니다.
+    backToMainBtn.addEventListener('click', () => showMainScreen(false));
 }
 
-/**
- * 퀴즈 화면을 표시하고 서버에서 문제를 로드합니다.
- */
+// ... (showQuizScreen 함수는 이전 코드와 동일)
+
 async function showQuizScreen() {
     mainScreen.style.display = 'none';
     quizScreen.style.display = 'block';
@@ -239,12 +294,8 @@ async function showQuizScreen() {
     const loadingMessage = `${subjectName} / ${difficultyName} 문제를 서버에 요청 중...`;
     
     currentSubjectDifficulty.textContent = loadingMessage;
-    // 로딩 중임을 표시하는 이미지로 대체
     problemImage.src = `https://placehold.co/800x250/3498db/ffffff?text=${encodeURIComponent('서버에 문제 요청 중...')}`;
     
-    let selectedProblem;
-
-    // 1. 서버 API를 호출하여 문제를 가져옵니다.
     try {
         const url = `/api/quiz/${currentSubject}/${currentDifficulty}`;
         console.log(`[문제 시스템] 서버 API 호출 시도: ${url}`);
@@ -255,66 +306,81 @@ async function showQuizScreen() {
             throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
         }
         
-        selectedProblem = await response.json();
+        // API 요청 성공. WebSocket 동기화 대기 중...
+
     } catch (e) {
-        // API 요청 실패 또는 서버에서 에러 메시지 반환 시 처리
         const errorMessage = e.message || "알 수 없는 서버 오류";
         currentSubjectDifficulty.textContent = `오류: 문제를 로드하는 데 실패했습니다. (${errorMessage})`;
         problemImage.src = `https://placehold.co/800x250/dc3545/ffffff?text=로딩+실패!`;
         console.error("문제 로드 API 실패:", e);
         return;
     }
-    
-    // 2. 서버가 반환한 문제의 논리적 URL을 그대로 사용합니다.
-    const actualImagePath = selectedProblem.url;
-    
-    // 현재 문제/난이도 표시 업데이트 (ID 포함)
-    currentSubjectDifficulty.textContent = `${subjectName} / ${difficultyName} (ID: ${selectedProblem.id})`;
-    
-    // 3. 이미지 로딩 에러 핸들러 설정
-    problemImage.onerror = () => {
-        // GitHub Pages 환경에서는 /images/... 경로가 루트를 기준으로 로드되어야 합니다.
-        console.error(`이미지 로드 실패 (404): ${actualImagePath}. 폴백 텍스트로 대체합니다.`); 
-        // 에러 발생 시 폴백 이미지에 실패 경로 표시
-        problemImage.src = `https://placehold.co/800x250/dc3545/ffffff?text=로딩+실패!+경로:+${actualImagePath}`;
-    };
-    
-    console.log(`이미지 로딩 시도 경로: ${actualImagePath}`);
-
-    // 4. 이미지 소스 설정 (로딩 시작)
-    problemImage.src = actualImagePath;
 }
 
-function showMainScreen() {
+/**
+ * 🚨 [수정] 메인 화면 복귀 함수: 교사 버튼 클릭 시(isSync=false) 서버에 명령을 전송하고, 
+ * 서버 동기화 명령 수신 시(isSync=true) 화면만 전환합니다.
+ */
+function showMainScreen(isSync) {
+    
+    // 교사가 직접 버튼을 누른 경우 (학생들에게 명령 전송)
+    if (!isSync) {
+        sendWebSocketData({ type: 'go_to_main' });
+        console.log('🚀 교사가 메인 화면 복귀 명령을 서버로 전송했습니다.');
+    }
+    
     mainScreen.style.display = 'block';
     quizScreen.style.display = 'none';
     difficultySelection.style.display = 'none';
 
-    // 선택 상태 초기화
+    // 선택 상태 및 캔버스 초기화
     document.querySelectorAll('.subject-btn').forEach(btn => btn.classList.remove('selected'));
     currentSubject = '';
     currentDifficulty = '';
+    
+    // 캔버스 초기화
+    setupCanvasContext(ctxP1);
+    setupCanvasContext(ctxP2);
     
     // 이미지 에러 핸들러 초기화
     problemImage.onerror = null; 
 }
 
 
-// 앱 초기화
-window.onload = async () => {
-    setupMainUiEvents();
-};
+// ... (syncQuizScreen 함수는 이전 코드와 동일)
 
+function syncQuizScreen(problemData, subject, difficulty) {
+    // 난이도, 주제 전역 변수 업데이트
+    currentSubject = subject;
+    currentDifficulty = difficulty;
 
-// script.js (파일 하단)
+    const subjectName = SUBJECT_NAMES[subject] || '주제';
+    const difficultyName = problemData[subject]?.difficulty_map[difficulty] || '난이도';
 
-let ws; // WebSocket 객체 변수
+    mainScreen.style.display = 'none';
+    quizScreen.style.display = 'block';
+    
+    // 캔버스 초기화 (새 문제 로드 시 이전 풀이 지우기)
+    setupCanvasContext(ctxP1);
+    setupCanvasContext(ctxP2);
+
+    const actualImagePath = problemData.url;
+    
+    currentSubjectDifficulty.textContent = `${subjectName} / ${difficultyName} (ID: ${problemData.id}) [동기화됨]`;
+    
+    problemImage.onerror = () => {
+        console.error(`동기화된 이미지 로드 실패: ${actualImagePath}`); 
+        problemImage.src = `https://placehold.co/800x250/dc3545/ffffff?text=동기화+실패+경로:+${actualImagePath}`;
+    };
+    
+    problemImage.src = actualImagePath;
+}
+
 
 /**
- * WebSocket 연결을 설정하고 이벤트 핸들러를 등록합니다.
+ * 💡 [수정] WebSocket 연결을 설정하고 이벤트 핸들러를 등록합니다.
  */
 function setupWebSocket() {
-    // 현재 접속 환경의 프로토콜을 사용하여 WebSocket 주소 설정
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host;
     
@@ -328,12 +394,28 @@ function setupWebSocket() {
         try {
             const data = JSON.parse(event.data);
             
-            // 🚨 [핵심 동기화 로직] 서버에서 새로운 문제 출제 메시지를 받으면
+            // 🚨 [핵심 동기화 1] 새로운 문제 출제 메시지를 받으면
             if (data.type === 'new_quiz_problem') {
                 console.log('📢 서버로부터 문제 동기화 메시지 수신:', data.problem.id);
-                // 모든 클라이언트의 화면을 받은 문제로 전환합니다.
                 syncQuizScreen(data.problem, data.subject, data.difficulty);
+            } 
+            // 🚨 [핵심 동기화 2] 드로잉 데이터를 받으면
+            else if (data.type === 'draw_data') {
+                executeDraw(data);
+            } 
+            // 🚨 [핵심 동기화 3] 전체 지우기 명령을 받으면
+            else if (data.type === 'clear_canvas') {
+                const ctx = drawingState[data.player].ctx;
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
             }
+            // 🚨 [핵심 동기화 4] 교사 주도 메인 화면 복귀 명령을 받으면
+            else if (data.type === 'go_to_main_sync') {
+                console.log('📢 서버로부터 메인 화면 복귀 명령 수신.');
+                showMainScreen(true); // 동기화 플래그를 true로 전달
+            }
+            
         } catch (e) {
             console.error('WebSocket 메시지 파싱 오류:', e);
         }
@@ -341,7 +423,6 @@ function setupWebSocket() {
 
     ws.onclose = () => {
         console.warn('❌ WebSocket 연결이 끊어졌습니다. 5초 후 재접속 시도.');
-        // 연결이 끊어지면 자동으로 재접속 시도
         setTimeout(setupWebSocket, 5000); 
     };
 
@@ -350,82 +431,9 @@ function setupWebSocket() {
     };
 }
 
-/**
- * 서버에서 전송된 문제 정보로 화면을 동기화합니다.
- */
-function syncQuizScreen(problemData, subject, difficulty) {
-    // 난이도, 주제 전역 변수 업데이트 (클릭 이벤트가 없었을 경우 대비)
-    currentSubject = subject;
-    currentDifficulty = difficulty;
-
-    const subjectName = SUBJECT_NAMES[subject] || '주제';
-    const difficultyName = problemData[subject]?.difficulty_map[difficulty] || '난이도';
-
-    mainScreen.style.display = 'none';
-    quizScreen.style.display = 'block';
-
-    const actualImagePath = problemData.url;
-    
-    currentSubjectDifficulty.textContent = `${subjectName} / ${difficultyName} (ID: ${problemData.id}) [동기화됨]`;
-    
-    // 이미지 로딩 에러 핸들러 설정
-    problemImage.onerror = () => {
-        console.error(`동기화된 이미지 로드 실패: ${actualImagePath}`); 
-        problemImage.src = `https://placehold.co/800x250/dc3545/ffffff?text=동기화+실패+경로:+${actualImagePath}`;
-    };
-    
-    problemImage.src = actualImagePath;
-}
-
 
 // 앱 초기화 로직 변경
 window.onload = async () => {
     setupMainUiEvents();
-    setupWebSocket(); // 💡 WebSocket 연결을 시작합니다.
+    setupWebSocket(); 
 };
-
-
-/**
- * 💡 기존 showQuizScreen 함수 수정: 
- * API 요청이 성공하면 (교사 태블릿에서), 
- * 서버가 이미 WebSocket으로 브로드캐스팅했기 때문에 
- * 이 함수 내에서는 직접 화면을 바꾸지 않고, 
- * 서버 응답에 맞춰 브로드캐스팅을 기다리도록 로직을 간소화할 수 있습니다.
- * (이미 이전 단계에서 수정된 버전의 script.js를 가정하고 이 로직을 작성합니다.)
- */
-async function showQuizScreen() {
-    mainScreen.style.display = 'none';
-    quizScreen.style.display = 'block';
-    
-    const subjectName = SUBJECT_NAMES[currentSubject] || '주제';
-    const difficultyName = problemData[currentSubject]?.difficulty_map[currentDifficulty] || '난이도';
-    
-    const loadingMessage = `${subjectName} / ${difficultyName} 문제를 서버에 요청 중...`;
-    
-    currentSubjectDifficulty.textContent = loadingMessage;
-    problemImage.src = `https://placehold.co/800x250/3498db/ffffff?text=${encodeURIComponent('서버에 문제 요청 중...')}`;
-    
-    try {
-        const url = `/api/quiz/${currentSubject}/${currentDifficulty}`;
-        console.log(`[문제 시스템] 서버 API 호출 시도: ${url}`);
-        const response = await fetch(url);
-        
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-        }
-        
-        // 💡 [수정 사항] 서버 API 응답을 기다리지 않고, 
-        // 서버가 곧바로 WebSocket으로 브로드캐스팅할 것이므로 
-        // 클라이언트(교사 태블릿 포함)는 syncQuizScreen 함수를 통해 동기화됩니다.
-        // 여기서는 API 요청 성공만 확인하고 바로 종료합니다.
-        console.log('API 요청 성공. WebSocket 동기화 대기 중...');
-
-    } catch (e) {
-        const errorMessage = e.message || "알 수 없는 서버 오류";
-        currentSubjectDifficulty.textContent = `오류: 문제를 로드하는 데 실패했습니다. (${errorMessage})`;
-        problemImage.src = `https://placehold.co/800x250/dc3545/ffffff?text=로딩+실패!`;
-        console.error("문제 로드 API 실패:", e);
-        return;
-    }
-}
