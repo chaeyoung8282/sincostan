@@ -21,9 +21,36 @@ wss.on('connection', (ws) => {
     console.log(`[WS] 새로운 클라이언트 접속. 현재 ${clients.size}명.`);
 
     ws.on('message', (message) => {
-        // 클라이언트에서 메시지를 받는 로직이 있다면 여기에 구현
-        const data = message.toString();
-        console.log(`[WS] 클라이언트로부터 메시지 수신: ${data}`);
+        try {
+            const data = JSON.parse(message.toString());
+            console.log(`[WS] 클라이언트로부터 데이터 수신: ${data.type}`);
+            
+            // 🚨 [새로운 로직] 드로잉 및 지우기 데이터를 받아서 모든 클라이언트에게 브로드캐스팅합니다.
+            if (data.type === 'draw_data' || data.type === 'clear_canvas') {
+                clients.forEach(client => {
+                    // 데이터 전송한 클라이언트 자신 포함 모든 클라이언트에게 브로드캐스트
+                    if (client.readyState === WebSocket.OPEN) {
+                        client.send(message.toString());
+                    }
+                });
+            }
+            
+            // 🚨 [새로운 로직] 교사의 메인 화면 전환 명령을 받아서 브로드캐스팅합니다.
+            if (data.type === 'go_to_main') {
+                const broadcastMessage = JSON.stringify({
+                    type: 'go_to_main_sync' // 동기화 명령으로 이름 변경
+                });
+                clients.forEach(client => {
+                    if (client.readyState === WebSocket.OPEN) {
+                        client.send(broadcastMessage);
+                    }
+                });
+                console.log(`[WS] 'go_to_main' 명령 브로드캐스트 완료.`);
+            }
+
+        } catch (e) {
+            console.error('WebSocket 메시지 파싱 오류:', e);
+        }
     });
 
     ws.on('close', () => {
@@ -51,10 +78,8 @@ const server = http.createServer((req, res) => {
             const problemList = problemsData[subject][difficulty];
             const key = `${subject}-${difficulty}`;
             
-            // 이미 출제된 문제 목록을 가져옵니다.
             const publishedIds = solvedProblems[key] || [];
 
-            // 출제되지 않은 문제만 필터링합니다.
             let availableProblems = problemList.filter(p => !publishedIds.includes(p.id));
 
             let nextProblem;
@@ -71,7 +96,6 @@ const server = http.createServer((req, res) => {
                 const randomIndex = Math.floor(Math.random() * availableProblems.length);
                 nextProblem = availableProblems[randomIndex];
             } else {
-                // 문제 목록이 비어 있으면 문제가 없음을 알림
                 res.writeHead(404, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ error: `문제 데이터 없음: ${subject}/${difficulty}` }));
                 return;
@@ -100,9 +124,8 @@ const server = http.createServer((req, res) => {
             // 요청한 클라이언트(교사)에게 응답 전송
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify(nextProblem));
-            return; // API 처리 완료
+            return;
         } else {
-            // 주제/난이도 데이터 없음
             res.writeHead(404, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ error: `주제 또는 난이도 데이터가 problems.json에 존재하지 않음: ${subject}/${difficulty}` }));
             return;
@@ -144,7 +167,7 @@ const server = http.createServer((req, res) => {
 
 // HTTP 서버 업그레이드 이벤트를 통해 WebSocket 연결 처리
 server.on('upgrade', (request, socket, head) => {
-    if (request.url === '/') { // 루트 경로로 WebSocket 연결 시도 가정
+    if (request.url === '/') { 
         wss.handleUpgrade(request, socket, head, (ws) => {
             wss.emit('connection', ws, request);
         });
