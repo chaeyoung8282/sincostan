@@ -50,24 +50,25 @@ let currentDifficulty = '';
 let ws; // WebSocket 객체 변수
 
 /**
- * --- 문제 데이터 ---
+ * --- 문제 데이터 (difficulty_map만 사용) ---
+ * 🚨 [수정] 공통수학 1 주제에서 'hard' 난이도 제거
  */
 const problemData = {
   "polynomial": {
     "difficulty_map": {
       "easy": "하 (TRAINING)",
-      "medium": "중 (CHALLENGE)",
-      "hard": "상 (BOSS)"
+      "medium": "중 (CHALLENGE)"
+      // "hard" 제거
     }
   },
   "equation": {
-    "difficulty_map": { "easy": "하 (TRAINING)", "medium": "중 (CHALLENGE)", "hard": "상 (BOSS)" }
+    "difficulty_map": { "easy": "하 (TRAINING)", "medium": "중 (CHALLENGE)" }
   },
   "permutation": {
-    "difficulty_map": { "easy": "하 (TRAINING)", "medium": "중 (CHALLENGE)", "hard": "상 (BOSS)" }
+    "difficulty_map": { "easy": "하 (TRAINING)", "medium": "중 (CHALLENGE)" }
   },
   "matrix": {
-    "difficulty_map": { "easy": "하 (TRAINING)", "medium": "중 (CHALLENGE)", "hard": "상 (BOSS)" }
+    "difficulty_map": { "easy": "하 (TRAINING)", "medium": "중 (CHALLENGE)" }
   },
   "geometry": {
     "difficulty_map": { "easy": "하 (TRAINING)", "medium": "중 (CHALLENGE)", "hard": "상 (BOSS)" }
@@ -109,7 +110,7 @@ setupCanvasContext(ctxP1);
 setupCanvasContext(ctxP2);
 
 /**
- * 💡 새로운 함수: WebSocket으로 데이터를 전송합니다.
+ * WebSocket으로 데이터를 전송합니다.
  */
 function sendWebSocketData(data) {
     if (ws && ws.readyState === WebSocket.OPEN) {
@@ -118,7 +119,7 @@ function sendWebSocketData(data) {
 }
 
 /**
- * 💡 새로운 함수: 수신된 드로잉 데이터를 캔버스에 그립니다. (동기화 용)
+ * 수신된 드로잉 데이터를 캔버스에 그립니다. (동기화 용)
  */
 function executeDraw(data) {
     const state = drawingState[data.player];
@@ -158,8 +159,7 @@ function draw(e, state) {
     const currentX = (clientX - rect.left) * scaleX;
     const currentY = (clientY - rect.top) * scaleY;
 
-    // 🚨 [수정] 캔버스에 그리기 전에 데이터를 서버로 보냅니다.
-    // 서버는 이 데이터를 다른 모든 클라이언트(교사 화면 포함)로 브로드캐스트합니다.
+    // 캔버스에 그리기 전에 데이터를 서버로 보냅니다.
     sendWebSocketData({
         type: 'draw_data',
         player: state.id, // 'p1' 또는 'p2'
@@ -172,7 +172,7 @@ function draw(e, state) {
         lineWidth: state.mode === 'eraser' ? 20 : 5
     });
 
-    // 로컬 캔버스에 그리기 (이전 로직과 동일)
+    // 로컬 캔버스에 그리기 
     executeDraw({
         player: state.id, 
         x0: state.lastX,
@@ -208,7 +208,6 @@ function setupCanvasEvents(canvas, player) {
     };
 
     const stopDrawing = () => {
-        // 🚨 [수정] 현재 플레이어가 드로잉 중이었다면 상태를 false로 변경
         if (state.isDrawing) {
             state.isDrawing = false;
         }
@@ -241,7 +240,7 @@ function setupCanvasEvents(canvas, player) {
                 ctx.fillStyle = '#ffffff';
                 ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
                 
-                // 🚨 [추가] 전체 지우기 명령을 서버로 전송하여 동기화
+                // 전체 지우기 명령을 서버로 전송하여 동기화
                 sendWebSocketData({ 
                     type: 'clear_canvas', 
                     player: player 
@@ -261,9 +260,21 @@ function setupMainUiEvents() {
     document.querySelectorAll('.subject-btn').forEach(button => {
         button.addEventListener('click', () => {
             currentSubject = button.dataset.subject;
-            // 주제 버튼을 누르면 난이도 선택 화면 표시
+            
             document.querySelectorAll('.subject-btn').forEach(btn => btn.classList.remove('selected'));
             button.classList.add('selected');
+
+            // 🚨 [수정] 난이도 '상' 버튼 표시/숨김 로직 추가
+            const basicSubjects = ['polynomial', 'equation', 'permutation', 'matrix'];
+            const hardBtn = document.getElementById('difficulty-hard-btn');
+            
+            if (hardBtn) {
+                if (basicSubjects.includes(currentSubject)) {
+                    hardBtn.style.display = 'none'; // 공통수학 1은 '상' 난이도 숨김
+                } else {
+                    hardBtn.style.display = 'inline-block'; // 공통수학 2는 '상' 난이도 표시
+                }
+            }
 
             difficultySelection.style.display = 'block';
         });
@@ -278,11 +289,9 @@ function setupMainUiEvents() {
         });
     });
 
-    // 🚨 [수정] 교사가 '메인으로 돌아가기' 버튼을 누르면 서버로 명령을 보냅니다.
+    // 교사가 '메인으로 돌아가기' 버튼을 누르면 서버로 명령을 보냅니다.
     backToMainBtn.addEventListener('click', () => showMainScreen(false));
 }
-
-// ... (showQuizScreen 함수는 이전 코드와 동일)
 
 async function showQuizScreen() {
     mainScreen.style.display = 'none';
@@ -318,7 +327,7 @@ async function showQuizScreen() {
 }
 
 /**
- * 🚨 [수정] 메인 화면 복귀 함수: 교사 버튼 클릭 시(isSync=false) 서버에 명령을 전송하고, 
+ * 메인 화면 복귀 함수: 교사 버튼 클릭 시(isSync=false) 서버에 명령을 전송하고, 
  * 서버 동기화 명령 수신 시(isSync=true) 화면만 전환합니다.
  */
 function showMainScreen(isSync) {
@@ -346,15 +355,13 @@ function showMainScreen(isSync) {
     problemImage.onerror = null; 
 }
 
-
-// ... (syncQuizScreen 함수는 이전 코드와 동일)
-
 function syncQuizScreen(problemData, subject, difficulty) {
     // 난이도, 주제 전역 변수 업데이트
     currentSubject = subject;
     currentDifficulty = difficulty;
 
     const subjectName = SUBJECT_NAMES[subject] || '주제';
+    // 🚨 [수정] difficulty_map에서 현재 난이도 이름을 안전하게 가져옵니다.
     const difficultyName = problemData[subject]?.difficulty_map[difficulty] || '난이도';
 
     mainScreen.style.display = 'none';
@@ -378,7 +385,7 @@ function syncQuizScreen(problemData, subject, difficulty) {
 
 
 /**
- * 💡 [수정] WebSocket 연결을 설정하고 이벤트 핸들러를 등록합니다.
+ * WebSocket 연결을 설정하고 이벤트 핸들러를 등록합니다.
  */
 function setupWebSocket() {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -394,23 +401,23 @@ function setupWebSocket() {
         try {
             const data = JSON.parse(event.data);
             
-            // 🚨 [핵심 동기화 1] 새로운 문제 출제 메시지를 받으면
+            // 1. 새로운 문제 출제 메시지를 받으면
             if (data.type === 'new_quiz_problem') {
                 console.log('📢 서버로부터 문제 동기화 메시지 수신:', data.problem.id);
                 syncQuizScreen(data.problem, data.subject, data.difficulty);
             } 
-            // 🚨 [핵심 동기화 2] 드로잉 데이터를 받으면
+            // 2. 드로잉 데이터를 받으면
             else if (data.type === 'draw_data') {
                 executeDraw(data);
             } 
-            // 🚨 [핵심 동기화 3] 전체 지우기 명령을 받으면
+            // 3. 전체 지우기 명령을 받으면
             else if (data.type === 'clear_canvas') {
                 const ctx = drawingState[data.player].ctx;
                 ctx.globalCompositeOperation = 'source-over';
                 ctx.fillStyle = '#ffffff';
                 ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
             }
-            // 🚨 [핵심 동기화 4] 교사 주도 메인 화면 복귀 명령을 받으면
+            // 4. 교사 주도 메인 화면 복귀 명령을 받으면
             else if (data.type === 'go_to_main_sync') {
                 console.log('📢 서버로부터 메인 화면 복귀 명령 수신.');
                 showMainScreen(true); // 동기화 플래그를 true로 전달
@@ -432,7 +439,7 @@ function setupWebSocket() {
 }
 
 
-// 앱 초기화 로직 변경
+// 앱 초기화
 window.onload = async () => {
     setupMainUiEvents();
     setupWebSocket(); 
