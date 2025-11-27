@@ -238,3 +238,94 @@ h1 {
 .timer-display.critical-time {
     animation: blink-red 0.5s infinite;
 }
+
+/* ================================================= */
+/* 정답 발표 오버레이 스타일 */
+/* ================================================= */
+
+#answer-reveal-overlay {
+    position: fixed; /* 전체 화면을 덮기 위해 fixed 사용 */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.9); /* 검은색 반투명 배경 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000; /* 가장 위에 표시되도록 */
+}
+
+#answer-content {
+    background-color: #ffffff;
+    padding: 40px;
+    border-radius: 15px;
+    box-shadow: 0 0 50px rgba(255, 223, 0, 0.8); /* 금빛 하이라이트 */
+    text-align: center;
+    max-width: 80vw;
+    max-height: 90vh;
+    overflow: auto;
+    transform: scale(0.5); /* 초기 크기는 작게 */
+    animation: bounce-in 0.5s forwards; /* 극적인 등장 효과 */
+}
+
+#answer-content h2 {
+    color: #ff5722; /* 주황색 강조 */
+    font-size: 3em;
+    margin-bottom: 20px;
+}
+
+#answer-image {
+    max-width: 100%;
+    height: auto;
+    border: 3px solid #007bff;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+/* 정답 화면 극적 등장 애니메이션 */
+@keyframes bounce-in {
+    0% { transform: scale(0.5); opacity: 0; }
+    80% { transform: scale(1.05); opacity: 1; }
+    100% { transform: scale(1); }
+}
+
+/* ================================================= */
+/* 축하 효과 (Confetti) 스타일 */
+/* ================================================= */
+
+#confetti-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none; /* 클릭을 막지 않도록 설정 */
+}
+
+.confetti {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background-color: #ff00ff; /* 기본 색상 */
+    opacity: 0;
+    animation: fall 3s infinite linear;
+    border-radius: 2px;
+}
+
+/* 색상 다양화 */
+.confetti:nth-child(2n) { background-color: #ffeb3b; }
+.confetti:nth-child(3n) { background-color: #00bcd4; }
+.confetti:nth-child(4n) { background-color: #4caf50; }
+
+/* 팡파레 효과 애니메이션 */
+@keyframes fall {
+    0% { 
+        transform: translateY(-10vh) rotate(0deg); 
+        opacity: 1; 
+    }
+    100% { 
+        transform: translateY(100vh) rotate(720deg); 
+        opacity: 0; 
+    }
+}
