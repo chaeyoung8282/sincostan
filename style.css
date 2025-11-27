@@ -3,15 +3,17 @@ body {
     font-family: Arial, sans-serif; 
     margin: 0;
     padding: 0;
-    background-color: #f4f4f9; 
+    background-color: #f4f4f9; /* 밝은 회색 배경 */
     color: #333; 
     text-align: center;
+    /* 뷰포트 높이 채우기 */
+    min-height: 100vh;
 }
 
 /* --- 메인 제목 및 UI --- */
 h1 {
     font-size: 2.5em;
-    color: #0056b3; 
+    color: #0056b3; /* 진한 파란색 */
     margin: 20px 0 10px;
 }
 
@@ -21,16 +23,25 @@ h1 {
     margin-bottom: 30px;
 }
 
-/* 🚨 [수정] 메인 화면/퀴즈 화면 컨테이너의 최대 너비를 뷰포트 너비(vw)에 비례하도록 조정 */
+/* 🚨 [수정] 메인 화면/퀴즈 화면 컨테이너: 화면 크기에 유연하게 반응하도록 변경 */
 #main-screen, #quiz-screen {
-    max-width: 90vw; /* 화면 너비의 최대 90% 사용 */
-    min-width: 900px; /* 최소 너비 지정 (너무 작아지는 것 방지) */
+    max-width: 95vw; /* 화면 너비의 최대 95% 사용 */
+    min-height: 90vh; /* 화면 높이의 최소 90% 사용 */
     margin: 30px auto;
     background-color: #ffffff;
     border: 1px solid #ddd;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    padding: 30px;
+    padding: 20px; /* 패딩을 줄여 공간 확보 */
     border-radius: 8px; 
+    box-sizing: border-box; /* 패딩이 전체 크기에 포함되도록 */
+}
+
+/* 🚨 [추가] 퀴즈 화면에 Flexbox 적용하여 세로 공간 관리 */
+#quiz-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
 }
 
 /* --- 영역 그룹 --- */
@@ -38,129 +49,127 @@ h1 {
     margin-bottom: 25px;
     padding: 15px;
     border: 1px solid #e0e0e0;
-    border-radius: 6px;
-    background-color: #f9f9f9;
+    border-radius: 4px;
+    background-color: #ffffff;
 }
 
 .subject-group h2 {
-    color: #007bff;
-    margin-top: 0;
-    font-size: 1.5em;
+    color: #28a745; /* 초록색 */
+    font-size: 1.4em;
+    margin-bottom: 15px;
 }
 
-/* --- 버튼 스타일 (생략) --- */
-.subject-btn, .difficulty-btn {
+/* --- 버튼 스타일: 초록색 계열의 깔끔한 버튼 --- */
+.subject-btn, .difficulty-btn, .main-control-btn, .tool-btn {
     padding: 10px 20px;
-    margin: 5px;
     font-size: 1em;
     cursor: pointer;
-    border: 2px solid #007bff;
-    background-color: #ffffff;
-    color: #007bff;
-    border-radius: 5px;
-    transition: background-color 0.2s, color 0.2s;
+    border: none;
+    border-radius: 5px; 
+    transition: background-color 0.2s;
+    margin: 5px;
+    font-weight: 600;
 }
 
-.subject-btn:hover, .difficulty-btn:hover {
-    background-color: #e6f0ff;
+/* 주제 버튼 */
+.subject-btn { 
+    background-color: #28a745; /* 초록색 */
+    color: white; 
+}
+.subject-btn:hover { 
+    background-color: #1e7e34; 
 }
 
-.subject-btn.selected, .difficulty-btn.selected {
-    background-color: #007bff;
-    color: #ffffff;
+/* 난이도 버튼 */
+.difficulty-btn { 
+    background-color: #007bff; /* 파란색 */
+    color: white; 
+}
+.difficulty-btn:hover { 
+    background-color: #0056b3; 
 }
 
-#difficulty-selection {
-    margin-top: 30px;
-    border-top: 2px solid #007bff;
-    padding-top: 20px;
+/* 메인으로 돌아가기 버튼 */
+.main-control-btn {
+    background-color: #6c757d; /* 회색 */
+    color: white;
+    margin-top: 10px; /* 🚨 [수정] 마진 줄여 공간 확보 */
+    flex-shrink: 0;
+}
+.main-control-btn:hover {
+    background-color: #5a6268;
 }
 
-#difficulty-selection h2 {
-    color: #343a40;
-}
-
-/* --- 퀴즈 화면 요소 --- */
-#problem-area {
-    margin-bottom: 20px;
-}
-
-/* 🚨 [추가] 문제 이미지의 가로세로 비율(8:2.5)을 유지하도록 설정 */
-#problem-image {
-    max-width: 100%;
-    height: auto;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    margin: 10px 0;
-    aspect-ratio: 800 / 250; /* 문제 이미지의 표준 비율 (800x250 기준) */
-    object-fit: contain;
-}
-
-/* --- 풀이 영역 컨테이너 (두 캔버스 옆으로 배치) --- */
+/* --- 2. 풀이 공간 전체 컨테이너 설정 --- */
 #solving-container {
-    display: flex;
-    justify-content: space-between;
-    gap: 20px;
-    margin-top: 10px;
-    margin-bottom: 20px;
+    display: flex; 
+    justify-content: center; 
+    gap: 20px; 
+    margin: 15px auto; /* 마진 줄여 공간 확보 */
     width: 100%;
-    /* max-width: 1150px; 제거 */
+    /* 🚨 [추가] 남은 세로 공간을 모두 채우도록 설정 */
+    flex-grow: 1; 
+    min-height: 0; 
 }
 
 /* --- 3. 각 플레이어의 풀이 영역 --- */
 .player-writing-area {
     flex: 1; 
-    min-width: 45%; /* 최소 너비 조정 (전체 화면이 작아질 때 잘 보이게) */
-    border: 1px solid #ced4da; 
+    min-width: 45%;
+    border: 1px solid #ced4da;
     border-radius: 4px;
     padding: 10px;
-    background-color: #f8f9fa; 
+    background-color: #f8f9fa;
+    /* 🚨 [추가] 내부 콘텐츠를 세로로 관리 */
+    display: flex;
+    flex-direction: column;
 }
 
 .player-writing-area h3 {
     color: #495057;
     margin-top: 0;
+    flex-shrink: 0;
 }
 
-/* 🚨 [수정] 캔버스의 높이(400px)를 제거하고, 가로세로 비율(550:400)을 강제 적용 */
+/* --- 4. 캔버스 크기 조정: 비율 유지하며 유연하게 높이 조정 --- */
 .writing-canvas {
     width: 100%; 
-    /* height: 400px;  <- 이 부분을 제거 */
-    aspect-ratio: 550 / 400; /* JS 파일의 해상도(550x400)를 기준으로 비율 고정 */
+    /* height: 400px;  <- 제거 */
+    flex-grow: 1; /* 🚨 [추가] 남은 공간을 캔버스가 채우도록 함 */
+    /* 🚨 [추가] 가로세로 비율 강제 적용 (550:400) */
+    aspect-ratio: 550 / 400; 
+    min-height: 200px; /* 너무 작아지는 것 방지 */
+
     border: 1px solid #adb5bd; 
     background-color: #ffffff;
     cursor: crosshair;
     border-radius: 4px;
 }
 
-/* --- 도구 버튼 및 컨트롤 버튼 스타일 (생략) --- */
+/* --- 5. 도구 버튼 배치 유연하게 변경 --- */
 .drawing-tools {
     margin-top: 10px;
     display: flex;
     flex-wrap: wrap; 
     justify-content: center;
     gap: 5px; 
+    flex-shrink: 0; /* 도구 영역은 크기 유지 */
 }
 
+/* 도구 버튼 스타일 */
 .tool-btn {
-    background-color: #e9ecef;
-    color: #343a40;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.2s;
+    background-color: #e9ecef; 
+    color: #495057;
+    padding: 6px 12px;
+    font-size: 0.9em;
 }
-
 .tool-btn:hover {
-    background-color: #adb5bd;
+    background-color: #dee2e6;
 }
-
 .tool-btn.selected {
-    background-color: #495057;
-    color: #ffffff;
+    background-color: #ffc107; 
+    color: #212529;
 }
-
 .clear-btn {
     background-color: #dc3545;
     color: white;
@@ -169,51 +178,61 @@ h1 {
     background-color: #c82333;
 }
 
-.main-control-btn {
-    padding: 15px 30px;
-    font-size: 1.2em;
-    background-color: #28a745;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    margin-top: 20px;
-    transition: background-color 0.2s;
+/* 문제 이미지 및 제목 */
+#problem-image {
+    max-width: 95%; 
+    height: auto;
+    border: 1px solid #ccc; 
+    background-color: #fff;
+    border-radius: 4px;
+    margin-bottom: 10px; /* 🚨 [수정] 마진 줄여 공간 확보 */
+    /* 🚨 [추가] 문제 이미지 가로세로 비율 강제 적용 (800:250) */
+    aspect-ratio: 800 / 250; 
+    object-fit: contain;
+    flex-shrink: 0;
 }
 
-.main-control-btn:hover {
-    background-color: #1e7e34;
+#problem-area {
+    flex-shrink: 0;
 }
 
-/* ================================================= */
+#problem-area h2 {
+    color: #495057; 
+    font-size: 2em;
+    margin-bottom: 5px; /* 🚨 [수정] 마진 줄여 공간 확보 */
+    flex-shrink: 0;
+}
+#problem-area span {
+    color: #007bff; 
+}
+
 /* 타이머 관련 스타일 */
-/* ================================================= */
-
 .timer-display {
-    font-size: 3em;
+    font-size: 2.5em; /* 🚨 [수정] 폰트 크기 약간 줄여 공간 확보 */
     font-weight: bold;
     color: #28a745;
-    margin: 15px 0 25px 0;
-    padding: 10px 20px;
+    margin: 10px 0 15px 0; /* 🚨 [수정] 마진 줄여 공간 확보 */
+    padding: 5px 15px; 
     background-color: #e9f5e9;
     border: 3px solid #28a745;
     border-radius: 8px;
     display: inline-block;
     letter-spacing: 2px;
     transition: all 0.3s ease-in-out;
+    flex-shrink: 0;
 }
 
 /* 깜빡임 애니메이션 정의 */
 @keyframes blink-red {
     0%, 100% { 
         color: white; 
-        background-color: #dc3545;
+        background-color: #dc3545; /* 빨간색 배경 */
         border-color: #c82333;
         box-shadow: 0 0 15px #dc3545;
     }
     50% { 
-        color: #dc3545; 
-        background-color: #ffdddd;
+        color: #dc3545; /* 빨간색 텍스트 */
+        background-color: #ffdddd; /* 아주 연한 빨간 배경 */
         border-color: #dc3545;
         box-shadow: none;
     }
