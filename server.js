@@ -7,62 +7,10 @@ const path = require('path');
 
 const PORT = process.env.PORT || 8080;
 
-// 💡 1. problems.json 파일에서 문제 데이터를 읽어옵니다. (수정된 JSON 파일이 로드됨)
+// 💡 1. problems.json 파일에서 문제 데이터를 읽어옵니다.
 const problemsData = JSON.parse(fs.readFileSync(path.join(__dirname, 'problems.json'), 'utf8'));
 // 💡 2. 출제된 문제를 기록할 변수 (서버 재시작 시 초기화됩니다.)
 const solvedProblems = {}; 
-
-// 2. WebSocket 서버 설정 (실시간 데이터 중계 역할)
-const wss = new WebSocket.Server({ noServer: true }); // HTTP 서버와 분리
-const clients = new Set(); // 접속된 모든 클라이언트 (교사, 학생) 저장
-
-wss.on('connection', (ws) => {
-    clients.add(ws);
-    console.log(`[WS] 새로운 클라이언트 접속. 현재 ${clients.size}명.`);
-
-    ws.on('message', (message) => {
-        try {
-            const data = JSON.parse(message.toString());
-            console.log(`[WS] 클라이언트로부터 데이터 수신: ${data.type}`);
-            
-            // 🚨 [동기화 로직] 드로잉 및 지우기 데이터를 받아서 모든 클라이언트에게 브로드캐스팅합니다.
-            if (data.type === 'draw_data' || data.type === 'clear_canvas') {
-                clients.forEach(client => {
-                    // 데이터 전송한 클라이언트 자신 포함 모든 클라이언트에게 브로드캐스트
-                    if (client.readyState === WebSocket.OPEN) {
-                        client.send(message.toString());
-                    }
-                });
-            }
-            
-            // 🚨 [동기화 로직] 교사의 메인 화면 전환 명령을 받아서 브로드캐스팅합니다.
-            if (data.type === 'go_to_main') {
-                const broadcastMessage = JSON.stringify({
-                    type: 'go_to_main_sync' // 동기화 명령
-                });
-                clients.forEach(client => {
-                    if (client.readyState === WebSocket.OPEN) {
-                        client.send(broadcastMessage);
-                    }
-                });
-                console.log(`[WS] 'go_to_main' 명령 브로드캐스트 완료.`);
-            }
-
-        } catch (e) {
-            console.error('WebSocket 메시지 파싱 오류:', e);
-        }
-    });
-
-    ws.on('close', () => {
-        clients.delete(ws);
-        console.log(`[WS] 클라이언트 연결 해제. 현재 ${clients.size}명.`);
-    });
-    
-    ws.on('error', (err) => {
-        console.error(`[WS] 오류 발생: ${err.message}`);
-    });
-});
-
 
 // 1. HTTP 서버 설정 (파일 제공 및 API 처리 역할)
 const server = http.createServer((req, res) => {
@@ -73,69 +21,64 @@ const server = http.createServer((req, res) => {
         const subject = parts[3]; 
         const difficulty = parts[4];
         
-        // 문제 데이터가 존재하는지 확인 (problems.json의 변경사항이 여기서 반영됨)
+        // 문제 데이터가 존재하는지 확인
         if (problemsData[subject] && problemsData[subject][difficulty]) {
             const problemList = problemsData[subject][difficulty];
             const key = `${subject}-${difficulty}`;
             
+            // 이미 출제된 문제 목록을 가져옵니다.
             const publishedIds = solvedProblems[key] || [];
 
-            // 출제되지 않은 문제만 필터링
+            // 출제되지 않은 문제만 필터링합니다.
             let availableProblems = problemList.filter(p => !publishedIds.includes(p.id));
 
             let nextProblem;
 
-            if (availableProblems.length === 0 && problemList.length > 0) {
-                // 모든 문제 출제 완료 시 초기화 (문제 재활용)
-                availableProblems = [...problemList];
-                solvedProblems[key] = [];
-                console.log(`[문제 시스템] ${key} 문제 초기화됨. 전체 ${availableProblems.length}개 재활용.`);
-            }
-
-            // 문제 선택 (랜덤)
             if (availableProblems.length > 0) {
-                const randomIndex = Math.floor(Math.random() * availableProblems.length);
-                nextProblem = availableProblems[randomIndex];
+                // 남은 문제가 있으면 첫 번째 문제를 출제
+                nextProblem = availableProblems[0];
+            } else if (problemList.length > 0) {
+                // 남은 문제가 없으면 출제 목록 초기화 후 첫 번째 문제를 다시 출제
+                console.log(`[QUIZ] ${key} 문제가 모두 소진되어 목록을 초기화합니다.`);
+                solvedProblems[key] = [];
+                nextProblem = problemList[0];
             } else {
-                // 문제 목록이 비어 있거나, (수정된 JSON에서 hard가 제거된 경우) 해당 난이도에 문제가 없을 경우
+                // 문제 목록 자체가 비어있음
                 res.writeHead(404, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ error: `문제 데이터 없음: ${subject}/${difficulty}` }));
+                res.end(JSON.stringify({ error: '해당 난이도에 등록된 문제가 없습니다.' }));
                 return;
             }
-
-            // 선택된 문제를 출제 목록에 추가
-            if (!solvedProblems[key]) {
-                solvedProblems[key] = [];
-            }
-            solvedProblems[key].push(nextProblem.id);
-
-            // 🚨 핵심: WebSocket을 통해 모든 클라이언트에게 문제 정보를 브로드캐스팅
-            const broadcastMessage = JSON.stringify({
-                type: 'new_quiz_problem',
-                problem: nextProblem,
-                subject: subject,
-                difficulty: difficulty
-            });
-
-            clients.forEach(client => {
-                if (client.readyState === WebSocket.OPEN) {
-                    client.send(broadcastMessage);
-                }
-            });
             
-            // 요청한 클라이언트(교사)에게 응답 전송
+            // 출제된 문제 ID를 기록
+            if (!solvedProblems[key] || solvedProblems[key].length === 0) {
+                solvedProblems[key] = [nextProblem.id];
+            } else if (!solvedProblems[key].includes(nextProblem.id)) {
+                solvedProblems[key].push(nextProblem.id);
+            }
+
+            // 출제 후 남은 문제 목록 (다음 문제부터)
+            const remainingProblems = problemList.filter(p => !solvedProblems[key].includes(p.id));
+
+            // 🚨 [수정] 클라이언트가 필요한 모든 정보(nextProblem, subjectName, remainingProblems)를 하나의 객체로 응답합니다.
+            const responseData = {
+                subjectName: subject, // 클라이언트에서 필요
+                nextProblem: nextProblem,
+                remainingProblems: remainingProblems,
+            };
+
             res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify(nextProblem));
-            return;
+            res.end(JSON.stringify(responseData));
+
         } else {
-            // 주제/난이도 데이터 없음 (예: 공통수학 1에서 hard 난이도를 요청한 경우)
+            // 주제 또는 난이도 데이터가 없을 경우
             res.writeHead(404, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: `problems.json에 해당 주제/난이도 데이터가 존재하지 않음: ${subject}/${difficulty}` }));
-            return;
+            res.end(JSON.stringify({ error: '유효하지 않은 주제 또는 난이도입니다.' }));
         }
+
+        return; // 퀴즈 요청 처리가 끝났으므로 HTTP 요청 종료
     }
     
-    // 3. 기존의 파일 제공 로직 (HTML, CSS, JS, 이미지 파일)
+    // 💡 정적 파일 요청 처리 (HTML, CSS, JS, 이미지 파일)
     let filePath = '.' + req.url;
     if (filePath === './') {
         filePath = './index.html';
@@ -168,17 +111,32 @@ const server = http.createServer((req, res) => {
     });
 });
 
-// HTTP 서버 업그레이드 이벤트를 통해 WebSocket 연결 처리
-server.on('upgrade', (request, socket, head) => {
-    if (request.url === '/') { 
-        wss.handleUpgrade(request, socket, head, (ws) => {
-            wss.emit('connection', ws, request);
-        });
-    } else {
-        socket.destroy();
-    }
+server.listen(PORT, () => {
+    console.log(`✅ HTTP 서버가 포트 ${PORT} 에서 실행 중입니다.`);
 });
 
-server.listen(PORT, () => {
-    console.log(`✅ HTTP/WS 서버가 포트 ${PORT} 에서 실행 중입니다.`);
+
+// 2. WebSocket 서버 설정 (실시간 데이터 중계 역할)
+const wss = new WebSocket.Server({ server });
+const clients = new Set();
+
+wss.on('connection', (ws) => {
+    clients.add(ws);
+
+    ws.on('message', (message) => {
+        const data = message.toString();
+        // 모든 연결된 클라이언트에게 메시지를 브로드캐스트합니다.
+        // (다만, 퀴즈 시작 메시지는 보낸 클라이언트에게는 다시 보내지 않도록 처리하는 것이 일반적이지만,
+        // 여기서는 클라이언트 측에서 자체적으로 처리하므로 그대로 브로드캐스트합니다.)
+        wss.clients.forEach(client => {
+            if (client.readyState === WebSocket.OPEN) {
+                client.send(data);
+            }
+        });
+    });
+
+    ws.on('close', () => {
+        clients.delete(ws);
+        console.log('클라이언트 연결 종료');
+    });
 });
