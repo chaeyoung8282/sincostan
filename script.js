@@ -219,7 +219,7 @@ function setupToolEvents() {
 }
 
 // =========================================================
-// 2. 타이머 로직
+// 2. 타이머 로직 (기존과 동일)
 // =========================================================
 
 function startTimer(durationInSeconds) {
@@ -306,10 +306,10 @@ async function loadNewQuiz(subject, difficulty) {
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-        const problemData = await response.json();
+        const problemResponse = await response.json(); // 서버 응답은 problemResponse로 받습니다.
         
-        if (problemData.error) {
-            alert(problemData.error);
+        if (problemResponse.error) {
+            alert(problemResponse.error);
             showMainScreen();
             return;
         }
@@ -317,37 +317,36 @@ async function loadNewQuiz(subject, difficulty) {
         // 새 문제를 성공적으로 가져왔으므로 화면 동기화
         sendWebSocketData({ 
             type: 'quiz_start', 
-            problemData: problemData, 
+            problemData: problemResponse, // 서버 응답 객체 전체를 전달
             subject: subject, 
             difficulty: difficulty 
         });
 
         // 로컬에서 화면 동기화 함수 호출
-        syncQuizScreen(problemData, subject, difficulty);
+        syncQuizScreen(problemResponse, subject, difficulty);
 
     } catch (error) {
-        console.error('퀴즈 로드 중 오류 발생:', error);
-        alert('퀴즈 데이터를 불러오는 데 실패했습니다. 서버 상태를 확인해 주세요.');
+        // 🚨 [수정] 퀴즈 로드 실패 시 콘솔에만 기록하고 불필요한 알림은 띄우지 않습니다.
+        console.error('퀴즈 로드 중 오류 발생. 서버 상태 또는 네트워크를 확인해주세요:', error);
     }
 }
 
 /**
  * 퀴즈 화면에 문제 정보 및 이미지 로드
- * @param {object} problemResponse 서버로부터 받은 응답 객체
+ * @param {object} problemResponse 서버로부터 받은 응답 객체 (nextProblem, remainingProblems, subjectName 포함)
  * @param {string} subject 현재 주제
  * @param {string} difficulty 현재 난이도
  */
 function syncQuizScreen(problemResponse, subject, difficulty) {
-    // 🚨 [수정] 서버 응답 객체의 구조를 확인하여 문제 데이터를 가져옵니다.
-    // server.js에서 nextProblem, remainingProblems 등을 포함하는 객체를 보내므로 구조를 확인합니다.
+    // 서버 응답 객체의 구조를 확인하여 문제 데이터를 가져옵니다.
     const problemData = problemResponse.nextProblem;
+    // 남은 문제 배열의 길이를 확인합니다.
     const remainingProblemsCount = problemResponse.remainingProblems ? problemResponse.remainingProblems.length : 0;
     
     if (!problemData) {
-        // 서버에서 문제가 없을 때 problemResponse.error를 보냈을 것이므로, 이 조건은 대부분 발생하지 않음.
-        // 하지만 안전을 위해 추가
+        // 문제 데이터가 없으면 오류 처리
         console.error("문제 데이터가 유효하지 않습니다.", problemResponse);
-        alert("더 이상 남은 문제가 없습니다.");
+        alert("더 이상 남은 문제가 없거나 데이터가 유효하지 않습니다.");
         showMainScreen();
         return;
     }
@@ -359,7 +358,7 @@ function syncQuizScreen(problemResponse, subject, difficulty) {
     currentProblemId = problemData.id;
     currentSubject = subject;
     currentDifficulty = difficulty;
-    // 🚨 [수정] 남은 문제 수 업데이트 로직
+    // 남은 문제 수 업데이트 로직 (배열 자체는 필요 없으므로 길이만 사용)
     currentProblemArray = problemResponse.remainingProblems || []; 
     
     // 1. 화면 전환 및 캔버스 클리어
@@ -385,7 +384,6 @@ function syncQuizScreen(problemResponse, subject, difficulty) {
     currentAnswerUrl = problemData.answer_url; 
     
     // 현재 문제/난이도 표시 업데이트
-    // 🚨 [수정] 남은 문제 수 표시
     currentSubjectDifficulty.textContent = `${subjectName} / ${difficultyName} (ID: ${problemData.id}) (남은 문제: ${remainingProblemsCount}개)`;
     
     // 3. 이미지 로딩 에러 핸들러 설정
@@ -566,7 +564,7 @@ function setupWebSocket() {
                 // 다른 클라이언트의 캔버스 지우기를 동기화합니다.
                 drawingState[data.playerId].ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
                 break;
-            // 🚨 [수정] 퀴즈 시작 및 새 문제 로드를 동일하게 처리
+            // 퀴즈 시작 및 새 문제 로드를 동일하게 처리
             case 'quiz_start': 
             case 'new_quiz_problem': 
                 // 교사 클라이언트가 시작한 퀴즈를 동기화합니다.
