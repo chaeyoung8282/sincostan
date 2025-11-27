@@ -12,6 +12,31 @@ const problemsData = JSON.parse(fs.readFileSync(path.join(__dirname, 'problems.j
 // 💡 2. 출제된 문제를 기록할 변수 (서버 재시작 시 초기화됩니다.)
 const solvedProblems = {}; 
 
+// 2. WebSocket 서버 설정 (실시간 데이터 중계 역할)
+const wss = new WebSocket.Server({ noServer: true }); // HTTP 서버와 분리
+const clients = new Set(); // 접속된 모든 클라이언트 (교사, 학생) 저장
+
+wss.on('connection', (ws) => {
+    clients.add(ws);
+    console.log(`[WS] 새로운 클라이언트 접속. 현재 ${clients.size}명.`);
+
+    ws.on('message', (message) => {
+        // 클라이언트에서 메시지를 받는 로직이 있다면 여기에 구현
+        const data = message.toString();
+        console.log(`[WS] 클라이언트로부터 메시지 수신: ${data}`);
+    });
+
+    ws.on('close', () => {
+        clients.delete(ws);
+        console.log(`[WS] 클라이언트 연결 해제. 현재 ${clients.size}명.`);
+    });
+    
+    ws.on('error', (err) => {
+        console.error(`[WS] 오류 발생: ${err.message}`);
+    });
+});
+
+
 // 1. HTTP 서버 설정 (파일 제공 및 API 처리 역할)
 const server = http.createServer((req, res) => {
     
@@ -35,35 +60,51 @@ const server = http.createServer((req, res) => {
             let nextProblem;
 
             if (availableProblems.length === 0 && problemList.length > 0) {
-                // 모든 문제를 다 풀었으면 (5문제), 목록을 초기화하고 처음부터 다시 랜덤 출제
+                // 모든 문제 출제 완료 시 초기화 (문제 재활용)
+                availableProblems = [...problemList];
                 solvedProblems[key] = [];
-                availableProblems = problemList; // 전체 목록으로 재설정
-                
-                // 사용자에게 모든 문제가 재출제됨을 알리는 메시지를 보낼 수도 있지만, 여기서는 자동으로 재출제합니다.
-            } 
-            
+                console.log(`[문제 시스템] ${key} 문제 초기화됨. 전체 ${availableProblems.length}개 재활용.`);
+            }
+
+            // 문제 선택 (랜덤)
             if (availableProblems.length > 0) {
-                // 출제되지 않은 문제 중에서 랜덤 선택
                 const randomIndex = Math.floor(Math.random() * availableProblems.length);
                 nextProblem = availableProblems[randomIndex];
-                
-                // 선택된 문제를 출제 목록에 추가
-                if (!solvedProblems[key]) solvedProblems[key] = [];
-                solvedProblems[key].push(nextProblem.id);
             } else {
-                // (5문제가 모두 없고) 문제 목록 자체가 비어 있을 때
-                 res.writeHead(404, { 'Content-Type': 'application/json' });
-                 res.end(JSON.stringify({ error: '해당 난이도에는 문제가 등록되지 않았습니다.' }));
-                 return;
+                // 문제 목록이 비어 있으면 문제가 없음을 알림
+                res.writeHead(404, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: `문제 데이터 없음: ${subject}/${difficulty}` }));
+                return;
             }
+
+            // 선택된 문제를 출제 목록에 추가
+            if (!solvedProblems[key]) {
+                solvedProblems[key] = [];
+            }
+            solvedProblems[key].push(nextProblem.id);
+
+            // 🚨 핵심: WebSocket을 통해 모든 클라이언트에게 문제 정보를 브로드캐스팅
+            const broadcastMessage = JSON.stringify({
+                type: 'new_quiz_problem',
+                problem: nextProblem,
+                subject: subject,
+                difficulty: difficulty
+            });
+
+            clients.forEach(client => {
+                if (client.readyState === WebSocket.OPEN) {
+                    client.send(broadcastMessage);
+                }
+            });
             
-            // 클라이언트에게 문제 정보 (ID와 URL) 전송
+            // 요청한 클라이언트(교사)에게 응답 전송
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify(nextProblem));
-            return; // API 요청 처리 완료
+            return; // API 처리 완료
         } else {
+            // 주제/난이도 데이터 없음
             res.writeHead(404, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: '잘못된 주제 또는 난이도입니다.' }));
+            res.end(JSON.stringify({ error: `주제 또는 난이도 데이터가 problems.json에 존재하지 않음: ${subject}/${difficulty}` }));
             return;
         }
     }
@@ -101,28 +142,17 @@ const server = http.createServer((req, res) => {
     });
 });
 
-server.listen(PORT, () => {
-    console.log(`✅ HTTP 서버가 포트 ${PORT} 에서 실행 중입니다.`);
+// HTTP 서버 업그레이드 이벤트를 통해 WebSocket 연결 처리
+server.on('upgrade', (request, socket, head) => {
+    if (request.url === '/') { // 루트 경로로 WebSocket 연결 시도 가정
+        wss.handleUpgrade(request, socket, head, (ws) => {
+            wss.emit('connection', ws, request);
+        });
+    } else {
+        socket.destroy();
+    }
 });
 
-
-// 2. WebSocket 서버 설정 (실시간 데이터 중계 역할)
-const wss = new WebSocket.Server({ server });
-const clients = new Set();
-
-wss.on('connection', (ws) => {
-    clients.add(ws);
-
-    ws.on('message', (message) => {
-        const data = message.toString();
-        clients.forEach((client) => {
-            if (client !== ws && client.readyState === WebSocket.OPEN) {
-                client.send(data);
-            }
-        });
-    });
-
-    ws.on('close', () => {
-        clients.delete(ws);
-    });
+server.listen(PORT, () => {
+    console.log(`✅ HTTP/WS 서버가 포트 ${PORT} 에서 실행 중입니다.`);
 });
