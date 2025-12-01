@@ -3,85 +3,197 @@ body {
     font-family: Arial, sans-serif; 
     margin: 0;
     padding: 0;
-    background-color: #f4f4f9; 
+    background-color: #f4f4f9; /* 밝은 회색 배경 */
     color: #333; 
     text-align: center;
 }
 
+/* --- 메인 제목 및 UI --- */
+h1 {
+    font-size: 2.5em;
+    color: #0056b3; /* 진한 파란색 */
+    margin: 20px 0 10px;
+}
+
+.subtitle {
+    font-size: 1.2em;
+    color: #555;
+    margin-bottom: 30px;
+}
+
 /* --- 메인 화면/퀴즈 화면 컨테이너 --- */
 #main-screen, #quiz-screen {
-    max-width: 1200px; 
+    max-width: 1200px; /* 넓게 유지하여 캔버스가 튀어나오지 않도록 함 */
     margin: 30px auto;
-    background-color: #ffffff; 
+    background-color: #ffffff; /* 흰색 배경 */
     border: 1px solid #ddd;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     padding: 30px;
     border-radius: 8px; 
 }
 
-/* 💡 [FIXED] 메인 타이틀과 캐릭터를 담을 컨테이너 */
-#main-title-container {
+/* ------------------------------------------- */
+/* 💡 [NEW/RESTORED] 메인 화면 캐릭터/제목 레이아웃 */
+/* ------------------------------------------- */
+
+/* 캐릭터와 제목을 가로로 정렬하는 컨테이너 */
+#header-content-wrapper {
     display: flex;
-    justify-content: center; 
-    align-items: center;
-    margin-bottom: 30px; 
-    gap: 50px; 
+    justify-content: space-between; /* 양 끝에 캐릭터, 중앙에 제목 */
+    align-items: flex-start; /* 상단 정렬 */
+    margin-bottom: 30px;
 }
 
-#title-wrapper {
+.main-title-block {
+    flex-grow: 1;
     text-align: center;
 }
 
-/* --- 메인 제목 및 UI --- */
-#main-screen h1 {
-    font-size: 2.5em;
-    color: #0056b3; 
-    margin: 0; 
+/* 캐릭터 정보 컨테이너 */
+.player-info-container {
+    width: 200px; /* 캐릭터 영역 너비 고정 */
+    text-align: center;
+    padding: 10px;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-#main-screen .subtitle {
-    font-size: 1.2em;
-    color: #555;
-    margin-bottom: 0; 
-}
-
-
-/* --- 6. 플레이어 상태 (메인 화면용) --- */
-.player-status {
-    width: 150px; 
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.character-img {
-    width: 100px; 
+.character-image {
+    width: 100px;
     height: 100px;
-    background-color: #ffeb3b;
-    border-radius: 50%;
-    margin-bottom: 10px;
-    border: 4px solid #f44336;
+    margin: 0 auto 10px;
     background-size: cover;
     background-position: center;
-    transition: transform 0.3s;
+    border-radius: 50%;
+    border: 3px solid #0056b3;
 }
 
-/* 하트 디스플레이 */
+.player-name {
+    font-weight: bold;
+    font-size: 1.1em;
+    margin-bottom: 5px;
+    color: #0056b3;
+}
+
 .heart-display {
-    display: flex; 
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap; /* 하트가 많을 경우 줄 바꿈 */
     gap: 2px;
 }
 
 .heart-icon {
-    width: 30px; 
-    height: 30px; 
+    width: 24px;
+    height: 24px;
     object-fit: contain;
 }
 
-/* 퀴즈 화면의 레이아웃 조정 */
-#quiz-screen #problem-area {
-    margin-top: 20px; 
+/* ------------------------------------------- */
+/* 💡 [RESTORED] 타이머 스타일 */
+/* ------------------------------------------- */
+
+.timer-display {
+    font-size: 2em;
+    font-weight: bold;
+    color: #0056b3; /* 기본 파란색 */
+    margin: 10px auto 20px;
+    padding: 10px 20px;
+    border: 3px solid #0056b3;
+    border-radius: 8px;
+    display: inline-block; 
+    background-color: #e6f0ff;
+    transition: all 0.3s ease; 
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
+
+/* 긴급 깜빡임 애니메이션 정의 */
+@keyframes urgent-blink {
+    0%, 100% { 
+        border-color: #dc3545; /* 빨간색 테두리 */
+        color: #dc3545; /* 빨간색 텍스트 */
+        transform: scale(1.0);
+    }
+    50% { 
+        border-color: #ffc107; /* 노란색 테두리 */
+        color: #ffc107; /* 노란색 텍스트 */
+        transform: scale(1.05);
+    }
+}
+
+/* 긴급 상태 (10초 미만) */
+.timer-display.urgent {
+    animation: urgent-blink 0.5s infinite alternate; 
+}
+
+
+/* ------------------------------------------- */
+/* 💡 [RESTORED] 채점 버튼 및 오버레이 스타일 */
+/* ------------------------------------------- */
+
+.score-buttons {
+    margin-top: 10px;
+    display: flex;
+    justify-content: space-around;
+}
+
+.grade-btn {
+    padding: 8px 15px;
+    font-size: 1em;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.grade-btn[data-result="correct"] {
+    background-color: #28a745;
+    color: white;
+}
+.grade-btn[data-result="correct"]:hover {
+    background-color: #1e7e34;
+}
+
+.grade-btn[data-result="incorrect"] {
+    background-color: #dc3545;
+    color: white;
+}
+.grade-btn[data-result="incorrect"]:hover {
+    background-color: #c82333;
+}
+
+/* 채점 효과 오버레이 */
+#score-effect-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+#score-effect-message {
+    padding: 30px 60px;
+    font-size: 3em;
+    font-weight: bold;
+    color: white;
+    border-radius: 15px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    animation: fade-in 0.5s ease-out;
+}
+
+@keyframes fade-in {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+/* ------------------------------------------- */
+/* 기존 스타일 (유지) */
+/* ------------------------------------------- */
 
 /* --- 영역 그룹 --- */
 .subject-group {
@@ -93,12 +205,12 @@ body {
 }
 
 .subject-group h2 {
-    color: #28a745; 
+    color: #28a745; /* 초록색 */
     font-size: 1.4em;
     margin-bottom: 15px;
 }
 
-/* --- 버튼 스타일 --- */
+/* --- 버튼 스타일: 초록색 계열의 깔끔한 버튼 --- */
 .subject-btn, .difficulty-btn, .main-control-btn, .tool-btn {
     padding: 10px 20px;
     font-size: 1em;
@@ -112,21 +224,30 @@ body {
 
 /* 주제 버튼 */
 .subject-btn { 
-    background-color: #28a745; 
+    background-color: #28a745; /* 초록색 */
     color: white; 
+}
+.subject-btn:hover { 
+    background-color: #1e7e34; 
 }
 
 /* 난이도 버튼 */
 .difficulty-btn { 
-    background-color: #007bff; 
+    background-color: #007bff; /* 파란색 */
     color: white; 
+}
+.difficulty-btn:hover { 
+    background-color: #0056b3; 
 }
 
 /* 메인으로 돌아가기 버튼 */
 .main-control-btn {
-    background-color: #6c757d; 
+    background-color: #6c757d; /* 회색 */
     color: white;
     margin-top: 20px;
+}
+.main-control-btn:hover {
+    background-color: #5a6268;
 }
 
 /* --- 2. 풀이 공간 전체 컨테이너 설정 --- */
@@ -135,17 +256,17 @@ body {
     justify-content: center; 
     gap: 20px; 
     margin: 30px auto; 
-    max-width: 1150px; 
+    max-width: 1150px; /* 메인 컨테이너보다 약간 작게 */
 }
 
 /* --- 3. 각 플레이어의 풀이 영역 --- */
 .player-writing-area {
     flex: 1; 
-    min-width: 500px; 
-    border: 1px solid #ced4da; 
+    min-width: 500px; /* 최소 너비 지정 */
+    border: 1px solid #ced4da; /* 연한 회색 테두리 */
     border-radius: 4px;
     padding: 10px;
-    background-color: #f8f9fa; 
+    background-color: #f8f9fa; /* 아주 연한 배경 */
 }
 
 .player-writing-area h3 {
@@ -153,16 +274,7 @@ body {
     margin-top: 0;
 }
 
-/* P1, P2 타이틀 색상 구분 (퀴즈 화면) */
-.player-writing-area[data-player="p1"] h3 {
-    color: #007bff;
-}
-.player-writing-area[data-player="p2"] h3 {
-    color: #dc3545;
-}
-
-
-/* --- 4. 캔버스 크기 조정 --- */
+/* --- 4. 캔버스 크기 조정 (JS 파일의 해상도와 CSS 높이 일치) --- */
 .writing-canvas {
     width: 100%; 
     height: 400px; 
@@ -183,19 +295,24 @@ body {
 
 /* 도구 버튼 스타일 */
 .tool-btn {
-    background-color: #e9ecef; 
+    background-color: #e9ecef; /* 연한 회색 */
     color: #495057;
     padding: 6px 12px;
     font-size: 0.9em;
 }
-
+.tool-btn:hover {
+    background-color: #dee2e6;
+}
 .tool-btn.selected {
-    background-color: #ffc107; 
+    background-color: #ffc107; /* 노란색 계열 선택 */
     color: #212529;
 }
 .clear-btn {
-    background-color: #dc3545; 
+    background-color: #dc3545; /* 빨간색 지우기 버튼 */
     color: white;
+}
+.clear-btn:hover {
+    background-color: #c82333;
 }
 
 /* 문제 이미지 및 제목 */
@@ -215,98 +332,4 @@ body {
 }
 #problem-area span {
     color: #007bff; 
-}
-
-/* --- 7. 채점 버튼 (교사 전용) --- */
-.score-buttons {
-    margin-top: 15px;
-    padding: 10px;
-    border-top: 1px solid #e0e0e0;
-}
-
-.grade-btn {
-    padding: 8px 15px;
-    font-size: 1em;
-    margin: 0 5px;
-    border-radius: 5px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.grade-btn.correct {
-    background-color: #28a745;
-    color: white;
-}
-.grade-btn.incorrect {
-    background-color: #dc3545;
-    color: white;
-}
-
-
-/* --- 8. 채점 효과 오버레이 --- */
-#score-effect-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-}
-
-#score-effect-message {
-    font-size: 3em;
-    color: white;
-    padding: 20px 40px;
-    border-radius: 10px;
-    background-color: rgba(255, 255, 255, 0.1);
-    animation: pulse 0.5s infinite alternate;
-}
-
-@keyframes pulse {
-    from {
-        transform: scale(1);
-        opacity: 0.8;
-    }
-    to {
-        transform: scale(1.1);
-        opacity: 1;
-    }
-}
-
-/* --- 7. 타이머 스타일 --- */
-.timer-display {
-    font-size: 2em;
-    font-weight: bold;
-    color: #0056b3; /* 기본 파란색 */
-    margin: 10px auto 20px; /* 상하 여백, 좌우 자동 (가운데 정렬) */
-    padding: 10px 20px;
-    border: 3px solid #0056b3;
-    border-radius: 8px;
-    display: inline-block; 
-    background-color: #e6f0ff;
-    transition: all 0.3s ease; 
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-/* 7-1. 긴급 깜빡임 애니메이션 정의 */
-@keyframes urgent-blink {
-    0%, 100% { 
-        border-color: #dc3545; /* 빨간색 테두리 */
-        color: #dc3545; /* 빨간색 텍스트 */
-        transform: scale(1.0);
-    }
-    50% { 
-        border-color: #ffc107; /* 노란색 테두리 */
-        color: #ffc107; /* 노란색 텍스트 */
-        transform: scale(1.05); /* 약간 커지는 효과 */
-    }
-}
-
-/* 7-2. 긴급 상태 (10초 미만) */
-.timer-display.urgent {
-    animation: urgent-blink 0.5s infinite alternate; /* 0.5초 간격으로 무한 반복 */
 }
