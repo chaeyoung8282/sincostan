@@ -276,3 +276,37 @@ body {
         opacity: 1;
     }
 }
+
+/* --- 7. 타이머 스타일 --- */
+.timer-display {
+    font-size: 2em;
+    font-weight: bold;
+    color: #0056b3; /* 기본 파란색 */
+    margin: 10px auto 20px; /* 상하 여백, 좌우 자동 (가운데 정렬) */
+    padding: 10px 20px;
+    border: 3px solid #0056b3;
+    border-radius: 8px;
+    display: inline-block; 
+    background-color: #e6f0ff;
+    transition: all 0.3s ease; 
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* 7-1. 긴급 깜빡임 애니메이션 정의 */
+@keyframes urgent-blink {
+    0%, 100% { 
+        border-color: #dc3545; /* 빨간색 테두리 */
+        color: #dc3545; /* 빨간색 텍스트 */
+        transform: scale(1.0);
+    }
+    50% { 
+        border-color: #ffc107; /* 노란색 테두리 */
+        color: #ffc107; /* 노란색 텍스트 */
+        transform: scale(1.05); /* 약간 커지는 효과 */
+    }
+}
+
+/* 7-2. 긴급 상태 (10초 미만) */
+.timer-display.urgent {
+    animation: urgent-blink 0.5s infinite alternate; /* 0.5초 간격으로 무한 반복 */
+}
