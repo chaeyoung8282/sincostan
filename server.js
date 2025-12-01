@@ -1,4 +1,4 @@
-// server (1).js 파일
+// server.js 파일
 
 const WebSocket = require('ws');
 const http = require('http');
@@ -7,7 +7,7 @@ const path = require('path');
 
 const PORT = process.env.PORT || 8080;
 
-// 💡 1. problems.json 파일에서 문제 데이터를 읽어옵니다.
+// 💡 1. problems.json 파일에서 문제 데이터를 읽어옵니다. (problems.json 파일이 프로젝트 루트에 존재한다고 가정)
 const problemsData = JSON.parse(fs.readFileSync(path.join(__dirname, 'problems.json'), 'utf8'));
 // 💡 2. 출제된 문제를 기록할 변수 (서버 재시작 시 초기화됩니다.)
 const solvedProblems = {}; 
@@ -38,8 +38,6 @@ const server = http.createServer((req, res) => {
                 // 모든 문제를 다 풀었으면 (5문제), 목록을 초기화하고 처음부터 다시 랜덤 출제
                 solvedProblems[key] = [];
                 availableProblems = problemList; // 전체 목록으로 재설정
-                
-                // 사용자에게 모든 문제가 재출제됨을 알리는 메시지를 보낼 수도 있지만, 여기서는 자동으로 재출제합니다.
             } 
             
             if (availableProblems.length > 0) {
@@ -68,14 +66,18 @@ const server = http.createServer((req, res) => {
         }
     }
     
-    // 3. 기존의 파일 제공 로직 (HTML, CSS, JS, 이미지 파일)
-    // 🚨 핵심 수정: 쿼리 스트링(?...)을 제거하여 실제 파일 경로만 사용합니다.
-    let urlWithoutQuery = req.url.split('?')[0]; 
-    let filePath = '.' + urlWithoutQuery;
-    
+    // 3. 정적 파일 제공 로직 (HTML, CSS, JS, 이미지 파일 포함)
+    let filePath = '.' + req.url;
     if (filePath === './') {
         filePath = './index.html';
     }
+    
+    // 💡 [FIXED] /images/ 경로 요청 처리: Render 환경에서 이미지 폴더 안의 파일 요청을 처리
+    if (req.url.startsWith('/images/')) {
+        // 예: 요청이 /images/characters/witch.png 면, 파일 시스템에서 './images/characters/witch.png'를 찾음
+        filePath = '.' + req.url;
+    }
+
 
     const extname = String(path.extname(filePath)).toLowerCase();
     const mimeTypes = {
@@ -118,7 +120,6 @@ wss.on('connection', (ws) => {
 
     ws.on('message', (message) => {
         const data = message.toString();
-        // 자신을 제외한 모든 클라이언트에게 데이터 중계
         clients.forEach((client) => {
             if (client !== ws && client.readyState === WebSocket.OPEN) {
                 client.send(data);
