@@ -17,7 +17,7 @@ body {
     background-color: #ffffff; 
     border: 1px solid #ddd;
     border-radius: 8px; 
-    position: relative; /* 💡 [CRUCIAL] 타이머 절대 위치의 기준점 */
+    position: relative; /* 타이머 절대 위치의 기준점 */
 }
 
 /* --- 메인 제목 및 UI --- */
@@ -95,12 +95,13 @@ h1 {
 /* ------------------------------------------- */
 
 .timer-display {
-    /* 💡 [NEW] 캔버스 위에 겹쳐 보이게 하는 핵심 스타일 */
     position: absolute;
-    top: 60%; /* 문제 영역 아래, 캔버스 중앙에 오도록 조정 */
+    /* 💡 [MODIFIED] 문제 영역 하단 + 캔버스 높이 + 도구 버튼 높이 절반 고려 */
+    /* 대략적인 값으로, 필요에 따라 브라우저에서 미세 조정 */
+    top: calc(10px + 250px + 280px + 20px); /* problem-area top margin + problem-image height + canvas height + 중간 여백 */
     left: 50%;
     transform: translate(-50%, -50%); 
-    z-index: 10; /* 다른 요소 위에 표시되도록 z-index를 높임 */
+    z-index: 10; 
     
     /* 타이머 디자인 */
     font-size: 1.8em; 
@@ -109,7 +110,7 @@ h1 {
     padding: 10px 20px; 
     border: 4px solid #0056b3;
     border-radius: 12px;
-    background-color: rgba(255, 255, 255, 0.9); /* 배경을 투명하게 설정하여 캔버스가 보이도록 함 */
+    background-color: rgba(255, 255, 255, 0.9); 
     box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
     transition: all 0.3s ease; 
 }
@@ -146,7 +147,8 @@ h1 {
 #problem-image {
     max-width: 95%; 
     height: auto;
-    margin-bottom: 0; 
+    /* 💡 [MODIFIED] 타이머 위치 고려하여 하단 마진 추가 (필요시 조절) */
+    margin-bottom: 5px; 
 }
 
 
@@ -155,8 +157,10 @@ h1 {
     display: flex; 
     justify-content: center; 
     gap: 5px; 
+    /* 💡 [MODIFIED] 타이머가 겹쳐지므로 상단 마진을 0으로 */
     margin: 0 auto; 
     max-width: 1150px; 
+    padding-top: 5px; /* 타이머와 겹치는 부분의 여백을 확보 (조절 가능) */
 }
 
 /* 각 플레이어의 풀이 영역 */
@@ -196,6 +200,9 @@ h1 {
     flex-wrap: wrap; 
     justify-content: center;
     gap: 2px; 
+    /* 💡 [MODIFIED] 타이머와 겹치므로 z-index 낮춰서 타이머가 항상 위에 오도록 */
+    position: relative; 
+    z-index: 5; /* 타이머보다 낮게 설정 */
 }
 
 .tool-btn {
@@ -205,6 +212,8 @@ h1 {
 
 .score-buttons {
     margin-top: 3px; 
+    position: relative; 
+    z-index: 5; /* 타이머보다 낮게 설정 */
 }
 
 .grade-btn {
