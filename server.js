@@ -1,4 +1,4 @@
-// server.js 파일
+// server (1).js 파일
 
 const WebSocket = require('ws');
 const http = require('http');
@@ -58,7 +58,6 @@ const server = http.createServer((req, res) => {
             }
             
             // 클라이언트에게 문제 정보 (ID와 URL) 전송
-            // 🚨 문제 구조 수정: nextProblem만 보내도록 변경
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify(nextProblem));
             return; // API 요청 처리 완료
@@ -70,11 +69,10 @@ const server = http.createServer((req, res) => {
     }
     
     // 3. 기존의 파일 제공 로직 (HTML, CSS, JS, 이미지 파일)
-    
-    // 🚨 [수정된 부분]: 쿼리 스트링(?role=teacher)을 제거하여 실제 파일 경로만 사용합니다.
+    // 🚨 핵심 수정: 쿼리 스트링(?...)을 제거하여 실제 파일 경로만 사용합니다.
     let urlWithoutQuery = req.url.split('?')[0]; 
     let filePath = '.' + urlWithoutQuery;
-
+    
     if (filePath === './') {
         filePath = './index.html';
     }
@@ -93,9 +91,8 @@ const server = http.createServer((req, res) => {
     fs.readFile(filePath, (err, content) => {
         if (err) {
             if (err.code === 'ENOENT') {
-                // 🚨 수정된 filePath를 반환하여 어떤 파일 경로를 찾지 못했는지 명확히 보여줍니다.
                 res.writeHead(404);
-                res.end('File not found: ' + filePath); 
+                res.end('File not found: ' + filePath);
             } else {
                 res.writeHead(500);
                 res.end('Server Error: ' + err.code);
@@ -121,6 +118,7 @@ wss.on('connection', (ws) => {
 
     ws.on('message', (message) => {
         const data = message.toString();
+        // 자신을 제외한 모든 클라이언트에게 데이터 중계
         clients.forEach((client) => {
             if (client !== ws && client.readyState === WebSocket.OPEN) {
                 client.send(data);
