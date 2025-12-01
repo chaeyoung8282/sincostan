@@ -11,7 +11,7 @@ const currentSubjectDifficulty = document.getElementById('current-subject-diffic
 const problemImage = document.getElementById('problem-image');
 const backToMainBtn = document.getElementById('back-to-main');
 const difficultySelection = document.getElementById('difficulty-selection');
-const solvingContainer = document.getElementById('solving-container'); // 레이아웃 변경용
+const solvingContainer = document.getElementById('solving-container'); 
 
 // 💡 채점 및 효과 관련 요소
 const scoreButtonsP1 = document.getElementById('score-buttons-p1');
@@ -38,6 +38,18 @@ const drawingState = {
         ctx: ctxP2, canvas: canvasP2, player: 'p2'
     }
 };
+
+// 캔버스 초기화 및 스타일 설정 함수
+function setupCanvasContext(ctx) {
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = 5;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+}
+
+setupCanvasContext(ctxP1);
+setupCanvasContext(ctxP2);
 
 // =========================================================
 // 전역 데이터 및 상태
@@ -88,18 +100,6 @@ let playerHP = {
 
 let isTeacher = false; 
 let myPlayerId = 'p1'; 
-
-// 캔버스 초기화 및 스타일 설정 함수
-function setupCanvasContext(ctx) {
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.lineWidth = 5;
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-}
-
-setupCanvasContext(ctxP1);
-setupCanvasContext(ctxP2);
 
 // =========================================================
 // 0. 역할/플레이어 식별 로직 및 HP 관리
@@ -170,7 +170,7 @@ function setupCharacterUI() {
 
 
 // =========================================================
-// 1. 드로잉 및 캔버스 관련 로직 (생략)
+// 1. 드로잉 및 캔버스 관련 로직 
 // =========================================================
 
 function performDrawing(playerId, fromX, fromY, toX, toY, color, mode) {
@@ -295,14 +295,13 @@ function setupCanvasListeners(playerId) {
 
 
 // =========================================================
-// 2. UI/레이아웃 및 동기화 로직 (생략)
+// 2. UI/레이아웃 및 동기화 로직 
 // =========================================================
 
 /**
  * 교사/학생 역할에 따라 퀴즈 화면 레이아웃을 설정합니다.
  */
 function setupQuizView() {
-    // 💡 HTML 구조 변경에 따라 선택자를 수정했습니다.
     const player1Area = document.querySelector('.player-writing-area[data-player="p1"]');
     const player2Area = document.querySelector('.player-writing-area[data-player="p2"]');
     
@@ -365,7 +364,7 @@ function showMainScreen() {
 
 
 // =========================================================
-// 3. 메인 UI 이벤트 로직 (생략)
+// 3. 메인 UI 이벤트 로직 
 // =========================================================
 
 /**
@@ -493,7 +492,7 @@ function showQuizScreen() {
 
 
 // =========================================================
-// 5. 채점 및 효과 로직 (생략)
+// 5. 채점 및 효과 로직 
 // =========================================================
 
 /**
