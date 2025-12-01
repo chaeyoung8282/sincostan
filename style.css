@@ -19,7 +19,7 @@ body {
     border-radius: 8px; 
 }
 
-/* 💡 [NEW] 메인 타이틀과 캐릭터를 담을 컨테이너 */
+/* 💡 [FIXED] 메인 타이틀과 캐릭터를 담을 컨테이너 */
 #main-title-container {
     display: flex;
     justify-content: center; /* 중앙 정렬 */
@@ -54,8 +54,9 @@ body {
     align-items: center;
 }
 
+/* 이름이 보이지 않도록 함 */
 .player-status h3 {
-    display: none; /* 캐릭터 이름 숨김 요청 반영 */
+    display: none; 
 }
 
 .character-img {
@@ -87,7 +88,7 @@ body {
 
 /* 퀴즈 화면의 레이아웃 조정 */
 #quiz-screen #problem-area {
-    margin-top: 20px; /* 캐릭터 상태 바 삭제로 인한 상단 여백 추가 */
+    margin-top: 20px; 
 }
 
 /* --- 영역 그룹 --- */
@@ -169,7 +170,7 @@ body {
     margin-top: 0;
 }
 
-/* 💡 P1, P2 타이틀 색상 구분 (퀴즈 화면) */
+/* P1, P2 타이틀 색상 구분 (퀴즈 화면) */
 .player-writing-area[data-player="p1"] h3 {
     color: #007bff;
 }
