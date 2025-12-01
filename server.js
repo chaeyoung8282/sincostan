@@ -100,13 +100,14 @@ server.listen(PORT, () => {
 
 // 2. WebSocket 서버 설정 (실시간 데이터 중계 역할)
 const wss = new WebSocket.Server({ server });
-const clients = new Set();
+const clients = new Set(); // 연결된 클라이언트 목록
 
 wss.on('connection', (ws) => {
-    clients.add(ws);
+    clients.add(ws); // 클라이언트 추가
 
     ws.on('message', (message) => {
         const data = message.toString();
+        // 발신자를 제외한 모든 클라이언트에게 메시지 전송 (브로드캐스트)
         clients.forEach((client) => {
             if (client !== ws && client.readyState === WebSocket.OPEN) {
                 client.send(data);
@@ -115,6 +116,6 @@ wss.on('connection', (ws) => {
     });
 
     ws.on('close', () => {
-        clients.delete(ws);
+        clients.delete(ws); // 클라이언트 제거
     });
 });
