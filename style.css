@@ -17,6 +17,7 @@ body {
     background-color: #ffffff; 
     border: 1px solid #ddd;
     border-radius: 8px; 
+    position: relative; /* 💡 [CRUCIAL] 타이머 절대 위치의 기준점 */
 }
 
 /* --- 메인 제목 및 UI --- */
@@ -90,7 +91,50 @@ h1 {
 
 
 /* ------------------------------------------- */
-/* 💡 [CRUCIAL MODIFICATION] 퀴즈 화면 요소 간격 및 타이머 위치 조정 */
+/* 💡 [CRUCIAL MODIFICATION] 타이머 오버레이 스타일 */
+/* ------------------------------------------- */
+
+.timer-display {
+    /* 💡 [NEW] 캔버스 위에 겹쳐 보이게 하는 핵심 스타일 */
+    position: absolute;
+    top: 60%; /* 문제 영역 아래, 캔버스 중앙에 오도록 조정 */
+    left: 50%;
+    transform: translate(-50%, -50%); 
+    z-index: 10; /* 다른 요소 위에 표시되도록 z-index를 높임 */
+    
+    /* 타이머 디자인 */
+    font-size: 1.8em; 
+    font-weight: bold;
+    color: #0056b3; 
+    padding: 10px 20px; 
+    border: 4px solid #0056b3;
+    border-radius: 12px;
+    background-color: rgba(255, 255, 255, 0.9); /* 배경을 투명하게 설정하여 캔버스가 보이도록 함 */
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease; 
+}
+
+/* 긴급 깜빡임 애니메이션은 유지 */
+@keyframes urgent-blink {
+    0%, 100% { 
+        border-color: #dc3545; 
+        color: #dc3545; 
+        transform: translate(-50%, -50%) scale(1.0);
+    }
+    50% { 
+        border-color: #ffc107; 
+        color: #ffc107; 
+        transform: translate(-50%, -50%) scale(1.05);
+    }
+}
+
+.timer-display.urgent {
+    animation: urgent-blink 0.5s infinite alternate; 
+}
+
+
+/* ------------------------------------------- */
+/* 문제/풀이 영역 스타일 (이전 요청대로 유지) */
 /* ------------------------------------------- */
 
 /* 문제 영역 */
@@ -105,27 +149,27 @@ h1 {
     margin-bottom: 0; 
 }
 
-/* 풀이 영역 컨테이너: Flexbox를 사용하여 영역을 분할 */
+
+/* 풀이 영역 컨테이너 */
 #solving-container {
     display: flex; 
     justify-content: center; 
-    gap: 0; /* 내부 요소 간격은 0으로 설정하여 세 요소가 나란히 붙도록 함 */
-    margin: 5px auto; 
+    gap: 5px; 
+    margin: 0 auto; 
     max-width: 1150px; 
-    align-items: stretch; /* 높이를 맞추기 위해 stretch 사용 */
 }
 
-/* 각 플레이어의 풀이 영역: 캔버스 외 나머지 부분을 채움 */
+/* 각 플레이어의 풀이 영역 */
 .player-writing-area {
-    flex: 1; /* 남은 공간을 균등하게 차지 */
+    flex: 1; 
     min-width: 48%; 
     border: 1px solid #ced4da; 
     border-radius: 4px;
     padding: 5px; 
     background-color: #f8f9fa; 
     display: flex;
-    flex-direction: column; /* 내부 요소를 세로로 정렬 */
-    justify-content: space-between; /* 내용물(캔버스, 도구)을 위아래로 분리 */
+    flex-direction: column; 
+    justify-content: space-between; 
 }
 
 .player-writing-area h3 {
@@ -137,62 +181,13 @@ h1 {
 /* 캔버스 높이 */
 .writing-canvas {
     width: 100%; 
-    height: 280px; /* 고정 높이 */
+    height: 280px; 
     border: 1px solid #adb5bd; 
     background-color: #ffffff;
     cursor: crosshair;
     border-radius: 4px;
-    margin-bottom: 5px; /* 도구 버튼과 캔버스 사이 간격 추가 */
+    margin-bottom: 5px; 
 }
-
-/* 💡 [NEW] 타이머 위치 래퍼: 두 풀이 영역 사이의 좁은 공간 */
-#timer-position-wrapper {
-    /* 양쪽 풀이 영역 사이의 좁은 공간을 위한 flex 속성 */
-    flex-basis: 50px; /* 너비 고정 */
-    flex-shrink: 0;
-    
-    /* 내부 타이머를 수직/수평 중앙에 배치 */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    
-    padding-top: 150px; /* 캔버스 중간 높이 즈음에 오도록 조정 */
-}
-
-
-/* 타이머 스타일 */
-.timer-display {
-    font-size: 1.2em; /* 크기 약간 축소하여 좁은 공간에 맞춤 */
-    font-weight: bold;
-    color: #0056b3; 
-    margin: 0; /* 래퍼가 마진을 담당하므로 제거 */
-    padding: 5px 8px; /* 패딩 축소 */
-    border: 3px solid #0056b3;
-    border-radius: 8px;
-    display: inline-block; 
-    background-color: #e6f0ff;
-    transition: all 0.3s ease; 
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-/* 긴급 깜빡임 애니메이션은 유지 */
-@keyframes urgent-blink {
-    0%, 100% { 
-        border-color: #dc3545; 
-        color: #dc3545; 
-        transform: scale(1.0);
-    }
-    50% { 
-        border-color: #ffc107; 
-        color: #ffc107; 
-        transform: scale(1.05);
-    }
-}
-
-.timer-display.urgent {
-    animation: urgent-blink 0.5s infinite alternate; 
-}
-
 
 /* 도구 버튼 배치 및 스타일 (유지) */
 .drawing-tools {
