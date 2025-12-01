@@ -80,13 +80,16 @@ const CHARACTER_CONFIG = {
     }
 };
 
-// 💡 [FIXED] 이미지 루트 경로를 서버 루트 기준 절대 경로로 수정 (404 오류 해결)
+// 💡 [수정] 폴더 이름 문제에 맞춰 'characters' 또는 'character'로 변경되었다고 가정
 const IMAGE_ROOT_PATH = "/images/character/"; 
 const HEART_FILES = {
     FULL: "full_heart.png",
     HALF: "half_heart.png",
     EMPTY: "empty_heart.png" 
 };
+
+// 💡 [NEW] 하트 아이콘의 최대 표시 개수를 설정합니다.
+const MAX_HEART_SLOTS = 10; // 최대 10개까지 하트를 표시하도록 설정 (UI가 너무 길어지는 것을 방지)
 
 let currentSubject = '';
 let currentDifficulty = '';
@@ -136,12 +139,15 @@ function updateHeartDisplay(playerId, hp) {
     const heartDisplay = document.getElementById(`hearts-${playerId}`);
     let html = '';
     
-    // HP 업데이트 및 0과 5 사이로 제한 (0.5 단위로 딱 떨어지게 함)
-    playerHP[playerId] = Math.max(0, Math.min(5.0, hp)); 
-    let currentHp = playerHP[playerId];
+    // 1. 💡 [FIXED] HP 업데이트: 최대값 제한 (5.0)을 제거하고 0보다 큰 값만 허용합니다.
+    playerHP[playerId] = Math.max(0, hp); 
     
-    // 하트 아이콘 생성 (최대 5개 하트)
-    for (let i = 0; i < 5; i++) { 
+    // 2. UI 표시를 위해 현재 HP를 가져옵니다. 
+    // 최대 MAX_HEART_SLOTS (10.0)까지만 UI에 표시되도록 제한합니다.
+    let currentHp = Math.min(playerHP[playerId], MAX_HEART_SLOTS);
+    
+    // 3. 💡 [FIXED] 하트 아이콘 생성: MAX_HEART_SLOTS (10) 만큼 반복하도록 변경
+    for (let i = 0; i < MAX_HEART_SLOTS; i++) { 
         let heartSrc = HEART_FILES.EMPTY; // 기본은 빈 하트
 
         if (currentHp >= 1.0) {
@@ -152,7 +158,7 @@ function updateHeartDisplay(playerId, hp) {
             currentHp = 0; 
         }
         
-        // 💡 [FIXED] 이미지 경로에 IMAGE_ROOT_PATH 사용
+        // 이미지 경로에 IMAGE_ROOT_PATH 사용
         html += `<img src="${IMAGE_ROOT_PATH}${heartSrc}" alt="Heart" class="heart-icon">`;
     }
     
@@ -163,7 +169,7 @@ function updateHeartDisplay(playerId, hp) {
  * 캐릭터 이미지를 UI에 설정합니다. (메인 화면용)
  */
 function setupCharacterUI() {
-    // 💡 [FIXED] 이미지 경로에 IMAGE_ROOT_PATH 사용
+    // 💡 이미지 경로에 IMAGE_ROOT_PATH 사용
     document.getElementById('char-p1').style.backgroundImage = `url(${IMAGE_ROOT_PATH}${CHARACTER_CONFIG.P1.imageFile})`;
     document.getElementById('char-p2').style.backgroundImage = `url(${IMAGE_ROOT_PATH}${CHARACTER_CONFIG.P2.imageFile})`;
 }
