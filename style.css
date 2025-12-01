@@ -11,9 +11,9 @@ body {
 /* --- 메인 화면/퀴즈 화면 컨테이너: 간격 최소화 --- */
 #main-screen, #quiz-screen {
     max-width: 1200px; 
-    margin: 10px auto; /* 마진 최소화 */
+    margin: 10px auto; 
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); 
-    padding: 10px; /* 패딩 최소화 */
+    padding: 10px; 
     background-color: #ffffff; 
     border: 1px solid #ddd;
     border-radius: 8px; 
@@ -36,7 +36,7 @@ h1 {
 /* 메인 화면 캐릭터/제목 레이아웃 */
 /* ------------------------------------------- */
 
-/* 캐릭터와 제목을 가로로 정렬하는 컨테이너 */
+/* (생략: 메인 화면 스타일은 이전과 동일하게 유지됩니다.) */
 #header-content-wrapper {
     display: flex;
     justify-content: center; 
@@ -50,7 +50,6 @@ h1 {
     text-align: center;
 }
 
-/* 캐릭터 정보 컨테이너 */
 .player-info-container {
     width: 180px; 
     text-align: center;
@@ -89,39 +88,44 @@ h1 {
     height: 20px; 
 }
 
+
 /* ------------------------------------------- */
-/* 💡 [MODIFIED] 퀴즈 화면 요소 간격 및 타이머 위치 조정 */
+/* 💡 [CRUCIAL MODIFICATION] 퀴즈 화면 요소 간격 및 타이머 위치 조정 */
 /* ------------------------------------------- */
 
 /* 문제 영역 */
 #problem-area {
-    margin-bottom: 0; /* 💡 문제와 풀이 공간 간격 제거 */
+    margin-bottom: 0; 
     padding: 0 5px; 
 }
 
 #problem-image {
     max-width: 95%; 
     height: auto;
-    margin-bottom: 0; /* 💡 문제와 풀이 공간 간격 제거 */
+    margin-bottom: 0; 
 }
 
-/* 풀이 영역 컨테이너 */
+/* 풀이 영역 컨테이너: Flexbox를 사용하여 영역을 분할 */
 #solving-container {
     display: flex; 
     justify-content: center; 
-    gap: 5px; 
-    margin: 5px auto; /* 상하 마진 최소화 (문제와 붙도록 상단 5px로 줄임) */
+    gap: 0; /* 내부 요소 간격은 0으로 설정하여 세 요소가 나란히 붙도록 함 */
+    margin: 5px auto; 
     max-width: 1150px; 
+    align-items: stretch; /* 높이를 맞추기 위해 stretch 사용 */
 }
 
-/* 각 플레이어의 풀이 영역 */
+/* 각 플레이어의 풀이 영역: 캔버스 외 나머지 부분을 채움 */
 .player-writing-area {
-    flex: 1; 
+    flex: 1; /* 남은 공간을 균등하게 차지 */
     min-width: 48%; 
     border: 1px solid #ced4da; 
     border-radius: 4px;
     padding: 5px; 
     background-color: #f8f9fa; 
+    display: flex;
+    flex-direction: column; /* 내부 요소를 세로로 정렬 */
+    justify-content: space-between; /* 내용물(캔버스, 도구)을 위아래로 분리 */
 }
 
 .player-writing-area h3 {
@@ -133,44 +137,36 @@ h1 {
 /* 캔버스 높이 */
 .writing-canvas {
     width: 100%; 
-    height: 280px; 
+    height: 280px; /* 고정 높이 */
     border: 1px solid #adb5bd; 
     background-color: #ffffff;
     cursor: crosshair;
     border-radius: 4px;
+    margin-bottom: 5px; /* 도구 버튼과 캔버스 사이 간격 추가 */
 }
 
-/* 도구 버튼 배치 및 스타일 */
-.drawing-tools {
-    margin-top: 3px; 
+/* 💡 [NEW] 타이머 위치 래퍼: 두 풀이 영역 사이의 좁은 공간 */
+#timer-position-wrapper {
+    /* 양쪽 풀이 영역 사이의 좁은 공간을 위한 flex 속성 */
+    flex-basis: 50px; /* 너비 고정 */
+    flex-shrink: 0;
+    
+    /* 내부 타이머를 수직/수평 중앙에 배치 */
     display: flex;
-    flex-wrap: wrap; 
     justify-content: center;
-    gap: 2px; 
+    align-items: center;
+    
+    padding-top: 150px; /* 캔버스 중간 높이 즈음에 오도록 조정 */
 }
 
-.tool-btn {
-    padding: 3px 6px; 
-    font-size: 0.75em; 
-}
 
-/* 채점 버튼 영역 */
-.score-buttons {
-    margin-top: 3px; 
-}
-
-.grade-btn {
-    padding: 5px 10px; 
-    font-size: 0.85em;
-}
-
-/* 타이머 스타일 (새로운 위치에 맞게 마진 조정) */
+/* 타이머 스타일 */
 .timer-display {
-    font-size: 1.5em; 
+    font-size: 1.2em; /* 크기 약간 축소하여 좁은 공간에 맞춤 */
     font-weight: bold;
     color: #0056b3; 
-    margin: 5px auto 10px; /* 💡 상단 마진 줄이고 하단 마진 추가 */
-    padding: 5px 10px; 
+    margin: 0; /* 래퍼가 마진을 담당하므로 제거 */
+    padding: 5px 8px; /* 패딩 축소 */
     border: 3px solid #0056b3;
     border-radius: 8px;
     display: inline-block; 
@@ -198,9 +194,32 @@ h1 {
 }
 
 
+/* 도구 버튼 배치 및 스타일 (유지) */
+.drawing-tools {
+    margin-top: 3px; 
+    display: flex;
+    flex-wrap: wrap; 
+    justify-content: center;
+    gap: 2px; 
+}
+
+.tool-btn {
+    padding: 3px 6px; 
+    font-size: 0.75em; 
+}
+
+.score-buttons {
+    margin-top: 3px; 
+}
+
+.grade-btn {
+    padding: 5px 10px; 
+    font-size: 0.85em;
+}
+
+
 /* --- 나머지 스타일 유지 --- */
 
-/* 영역 그룹 */
 .subject-group {
     margin-bottom: 15px; 
     padding: 10px; 
@@ -209,12 +228,10 @@ h1 {
     background-color: #ffffff;
 }
 
-/* 메인으로 돌아가기 버튼 */
 .main-control-btn {
     margin-top: 10px; 
 }
 
-/* 채점 효과 오버레이 (유지) */
 #score-effect-overlay {
     position: fixed;
     top: 0;
