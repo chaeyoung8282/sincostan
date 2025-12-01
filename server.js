@@ -4,10 +4,11 @@ const WebSocket = require('ws');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const url = require('url'); // 💡 [추가] url 모듈 추가!
 
 const PORT = process.env.PORT || 8080;
 
-// 💡 1. problems.json 파일에서 문제 데이터를 읽어옵니다. (problems.json 파일이 프로젝트 루트에 존재한다고 가정)
+// 💡 1. problems.json 파일에서 문제 데이터를 읽어옵니다.
 const problemsData = JSON.parse(fs.readFileSync(path.join(__dirname, 'problems.json'), 'utf8'));
 // 💡 2. 출제된 문제를 기록할 변수 (서버 재시작 시 초기화됩니다.)
 const solvedProblems = {}; 
@@ -15,9 +16,13 @@ const solvedProblems = {};
 // 1. HTTP 서버 설정 (파일 제공 및 API 처리 역할)
 const server = http.createServer((req, res) => {
     
+    // 💡 [FIXED] 쿼리 문자열을 분리합니다.
+    const parsedUrl = url.parse(req.url); 
+    let pathname = parsedUrl.pathname;
+    
     // 💡 퀴즈 요청 처리 API 경로 (/api/quiz/주제/난이도)
-    if (req.url.startsWith('/api/quiz/')) {
-        const parts = req.url.split('/'); 
+    if (pathname.startsWith('/api/quiz/')) {
+        const parts = pathname.split('/'); 
         const subject = parts[3]; 
         const difficulty = parts[4];
         
@@ -67,17 +72,10 @@ const server = http.createServer((req, res) => {
     }
     
     // 3. 정적 파일 제공 로직 (HTML, CSS, JS, 이미지 파일 포함)
-    let filePath = '.' + req.url;
+    let filePath = '.' + pathname; // 💡 [FIXED] 쿼리 문자열이 제거된 pathname 사용
     if (filePath === './') {
         filePath = './index.html';
     }
-    
-    // 💡 [FIXED] /images/ 경로 요청 처리: Render 환경에서 이미지 폴더 안의 파일 요청을 처리
-    if (req.url.startsWith('/images/')) {
-        // 예: 요청이 /images/characters/witch.png 면, 파일 시스템에서 './images/characters/witch.png'를 찾음
-        filePath = '.' + req.url;
-    }
-
 
     const extname = String(path.extname(filePath)).toLowerCase();
     const mimeTypes = {
