@@ -27,70 +27,83 @@
             <h2>🛡️ 공통수학 2 : ADVANCED STAGE</h2>
             <div id="subject-buttons-group-2">
                 <button class="subject-btn" data-subject="geometry">도형의 방정식</button>
-                <button class="subject-btn" data-subject="function">함수</button>
-                <button class="subject-btn" data-subject="calculus">미적분</button>
-                <button class="subject-btn" data-subject="probability">확률과 통계</button>
+                <button class="subject-btn" data-subject="set">집합과 명제</button>
+                <button class="subject-btn" data-subject="function">함수와 그래프</button>
             </div>
         </div>
 
         <div id="difficulty-selection" style="display: none;">
-            <h2>난이도를 선택하세요</h2>
-            <button class="difficulty-btn" data-difficulty="easy">하 (TRAINING)</button>
-            <button class="difficulty-btn" data-difficulty="medium">중 (CHALLENGE)</button>
-            <button class="difficulty-btn" data-difficulty="hard">상 (BOSS)</button>
+            <h2>난이도 선택</h2>
+            <button class="difficulty-btn" data-difficulty="hard">상 : BOSS</button>
+            <button class="difficulty-btn" data-difficulty="medium">중 : CHALLENGE</button>
+            <button class="difficulty-btn" data-difficulty="easy">하 : TRAINING</button>
         </div>
     </div>
 
     <div id="quiz-screen" style="display: none;">
-        <div id="quiz-top-bar" class="quiz-top-bar">
-            <h2 id="current-subject-difficulty"></h2>
-            <div id="timer-display-top">⏱️ 남은 시간: 00:00</div>
-        </div>
 
-        <div class="problem-area">
+        <div id="player-status-bar">
+            <div id="status-p1" class="player-status">
+                <h3>플레이어 1</h3>
+                <div class="character-img" id="char-p1" style="background-image: url('https://placehold.co/80x80/007bff/ffffff?text=P1');"></div>
+                <div class="heart-display" id="hearts-p1"></div>
+            </div>
+
+            <div id="status-p2" class="player-status">
+                <h3>플레이어 2</h3>
+                <div class="character-img" id="char-p2" style="background-image: url('https://placehold.co/80x80/dc3545/ffffff?text=P2');"></div>
+                <div class="heart-display" id="hearts-p2"></div>
+            </div>
+        </div>
+        
+        <div id="problem-area">
+            <h2>문제 : <span id="current-subject-difficulty"></span></h2>
             <img id="problem-image" src="" alt="수학 문제 이미지">
         </div>
 
-        <div id="quiz-area-container" class="quiz-area-container">
-
+        <div id="solving-container">
+            
             <div class="player-writing-area" data-player="p1">
-                <h3>풀이 공간 (P1)</h3>
+                <h3>P1 풀이 공간</h3>
                 <canvas id="canvas-p1" class="writing-canvas"></canvas>
                 
-                <div class="drawing-tools">
+                <div class="drawing-tools" id="tools-p1">
                     <button class="tool-btn selected" data-color="#000000" data-mode="pen" data-player="p1">⚫️ 검정 펜</button>
                     <button class="tool-btn" data-color="#ff0000" data-mode="pen" data-player="p1">🔴 빨강 펜</button>
                     <button class="tool-btn" data-mode="eraser" data-player="p1">🧽지우개</button>
                     <button class="tool-btn clear-btn" data-player="p1"> 전체 지우기</button>
                 </div>
+
+                <div class="score-buttons" id="score-buttons-p1" style="display: none;">
+                    <button class="grade-btn correct" data-player="p1" data-result="correct">✅ 정답 (+1)</button>
+                    <button class="grade-btn incorrect" data-player="p1" data-result="incorrect">❌ 오답 (-0.5)</button>
+                </div>
             </div>
 
             <div class="player-writing-area" data-player="p2">
-                <h3>풀이 공간 (P2)</h3>
+                <h3>P2 풀이 공간</h3>
                 <canvas id="canvas-p2" class="writing-canvas"></canvas>
                 
-                <div class="drawing-tools">
+                <div class="drawing-tools" id="tools-p2">
                     <button class="tool-btn selected" data-color="#000000" data-mode="pen" data-player="p2">⚫️ 검정 펜</button>
                     <button class="tool-btn" data-color="#ff0000" data-mode="pen" data-player="p2">🔴 빨강 펜</button>
                     <button class="tool-btn" data-mode="eraser" data-player="p2">🧽지우개</button>
                     <button class="tool-btn clear-btn" data-player="p2"> 전체 지우기</button>
                 </div>
-            </div>
 
-        </div> <div class="quiz-bottom-bar">
-            <button id="reveal-answer-btn" style="display: none;" class="btn-success">✅ 정답 확인하기</button>
-            <div id="timer-display-bottom">⏱️ 남은 시간: 00:00</div>
-            <button id="back-to-main" class="btn-secondary">메인으로</button>
+                <div class="score-buttons" id="score-buttons-p2" style="display: none;">
+                    <button class="grade-btn correct" data-player="p2" data-result="correct">✅ 정답 (+1)</button>
+                    <button class="grade-btn incorrect" data-player="p2" data-result="incorrect">❌ 오답 (-0.5)</button>
+                </div>
+            </div>
+            
         </div>
-    </div>
-    
-    <div id="answer-reveal-overlay" style="display: none;">
-        <div class="answer-content">
-            <h2>🏆 정답입니다! 🏆</h2>
-            <img id="answer-image" src="" alt="정답 이미지">
-            <button id="close-answer-btn" class="btn-primary">닫기</button>
+        
+        <button id="back-to-main" class="main-control-btn">메인으로 돌아가기</button>
+        
+        <div id="score-effect-overlay" style="display: none;">
+            <div id="score-effect-message"></div>
         </div>
-        <div id="confetti-container"></div>
     </div>
 
     <script src="script.js"></script>
