@@ -7,7 +7,8 @@ const ctxP2 = canvasP2.getContext('2d');
 // 메인 화면과 퀴즈 화면 요소를 가져옵니다.
 const mainScreen = document.getElementById('main-screen');
 const quizScreen = document.getElementById('quiz-screen');
-const currentSubjectDifficulty = document.getElementById('current-subject-difficulty');
+// 💡 [FIX 1] currentSubjectDifficulty 요소는 HTML에서 삭제되었으므로, 변수 선언은 유지하되 사용 시 주의해야 합니다.
+const currentSubjectDifficulty = document.getElementById('current-subject-difficulty'); 
 const problemImage = document.getElementById('problem-image');
 const backToMainBtn = document.getElementById('back-to-main');
 const difficultySelection = document.getElementById('difficulty-selection');
@@ -20,9 +21,9 @@ const scoreEffectOverlay = document.getElementById('score-effect-overlay');
 const scoreEffectMessage = document.getElementById('score-effect-message');
 
 
-// 캔버스 해상도 설정
+// 💡 [OPTIMIZATION] 캔버스 해상도 설정 (CSS 높이 280px에 맞춰 비율 조정)
 const CANVAS_WIDTH = 550; 
-const CANVAS_HEIGHT = 400; 
+const CANVAS_HEIGHT = 280; // 400px -> 280px로 변경하여 수직 공간 확보
 
 canvasP1.width = CANVAS_WIDTH; canvasP1.height = CANVAS_HEIGHT;
 canvasP2.width = CANVAS_WIDTH; canvasP2.height = CANVAS_HEIGHT;
@@ -331,8 +332,9 @@ function setupQuizView() {
         scoreButtonsP1.style.display = 'block'; 
         scoreButtonsP2.style.display = 'block'; 
         solvingContainer.style.flexDirection = 'row'; 
-        player1Area.querySelector('.writing-canvas').style.height = '400px'; 
-        player2Area.querySelector('.writing-canvas').style.height = '400px'; 
+        // 💡 [OPTIMIZATION] CSS와 맞춤
+        player1Area.querySelector('.writing-canvas').style.height = '280px'; 
+        player2Area.querySelector('.writing-canvas').style.height = '280px'; 
         
     } else {
         // 학생 모드: 자신의 영역만 크게 표시
@@ -485,8 +487,9 @@ async function loadNewQuiz() {
 
     } catch (error) {
         console.error('퀴즈 로드 실패:', error);
-        currentSubjectDifficulty.textContent = `오류: ${error.message}`;
-        problemImage.src = `https://placehold.co/800x250/dc3545/ffffff?text=${encodeURIComponent(error.message)}`;
+        // 💡 [FIX 2] 오류 발생 시에도 삭제된 요소에 접근하지 않도록 수정
+        // currentSubjectDifficulty.textContent = `오류: ${error.message}`; // 이 줄 제거
+        problemImage.src = `https://placehold.co/800x250/dc3545/ffffff?text=${encodeURIComponent('퀴즈 로드 실패: ' + error.message)}`;
     }
 }
 
@@ -497,7 +500,8 @@ function syncQuizScreen(problem) {
     const subjectName = SUBJECT_NAMES[currentSubject] || currentSubject;
     const imagePath = problem.url; 
 
-    currentSubjectDifficulty.textContent = `${subjectName} / ${problem.id}`;
+    // 💡 [FIX 3] HTML에서 삭제된 요소에 접근하는 코드 제거
+    // currentSubjectDifficulty.textContent = `${subjectName} / ${problem.id}`; // 이 줄 제거
     
     problemImage.onerror = () => {
         console.error(`이미지 로드 실패 (404): ${imagePath}.`); 
@@ -507,6 +511,7 @@ function syncQuizScreen(problem) {
     // 이미지 소스 설정: Render는 정적 파일을 프로젝트 루트 기준으로 제공하므로, 절대 경로(/images/...)를 사용합니다.
     problemImage.src = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
     
+    // 💡 [OPTIMIZATION] 캔버스 해상도 재설정 (CSS 높이와 맞춤)
     canvasP1.width = CANVAS_WIDTH; canvasP1.height = CANVAS_HEIGHT;
     canvasP2.width = CANVAS_WIDTH; canvasP2.height = CANVAS_HEIGHT;
 
@@ -523,7 +528,8 @@ function showQuizScreen() {
     const subjectName = SUBJECT_NAMES[currentSubject] || '주제';
     const loadingMessage = `${subjectName} 문제를 서버에 요청 중...`;
     
-    currentSubjectDifficulty.textContent = loadingMessage;
+    // 💡 [FIX 4] HTML에서 삭제된 요소에 접근하는 코드 제거
+    // currentSubjectDifficulty.textContent = loadingMessage; // 이 줄 제거
     problemImage.src = `https://placehold.co/800x250/3498db/ffffff?text=${encodeURIComponent(loadingMessage)}`;
 }
 
@@ -550,7 +556,7 @@ function startQuizTimer() {
         if (quizTimerDisplay) {
              quizTimerDisplay.textContent = `남은 시간: ${timeLeft}초`;
         }
-       
+        
         // 4. 긴급 깜빡임 효과 적용
         if (timeLeft <= ALERT_TIME_SECONDS) {
             quizTimerDisplay.classList.add('urgent');
@@ -562,7 +568,7 @@ function startQuizTimer() {
             if (quizTimerDisplay) {
                  quizTimerDisplay.textContent = 'TIME OVER!';
             }
-           
+            
             // TODO: (선택 사항) 시간이 초과되었을 때 정답/오답 처리를 강제로 진행하거나 HP를 차감하는 로직을 여기에 추가할 수 있습니다.
         }
     }, 1000);
