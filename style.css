@@ -3,7 +3,7 @@ body {
     font-family: Arial, sans-serif; 
     margin: 0;
     padding: 0;
-    background-color: #f4f4f9; /* 밝은 회색 배경 */
+    background-color: #f4f4f9; 
     color: #333; 
     text-align: center;
 }
@@ -22,10 +22,10 @@ body {
 /* 💡 [FIXED] 메인 타이틀과 캐릭터를 담을 컨테이너 */
 #main-title-container {
     display: flex;
-    justify-content: center; /* 중앙 정렬 */
+    justify-content: center; 
     align-items: center;
     margin-bottom: 30px; 
-    gap: 50px; /* 캐릭터와 타이틀 사이 간격 */
+    gap: 50px; 
 }
 
 #title-wrapper {
@@ -36,31 +36,26 @@ body {
 #main-screen h1 {
     font-size: 2.5em;
     color: #0056b3; 
-    margin: 0; /* 여백 제거 */
+    margin: 0; 
 }
 
 #main-screen .subtitle {
     font-size: 1.2em;
     color: #555;
-    margin-bottom: 0; /* 여백 제거 */
+    margin-bottom: 0; 
 }
 
 
 /* --- 6. 플레이어 상태 (메인 화면용) --- */
 .player-status {
-    width: 150px; /* 캐릭터 영역 너비 고정 */
+    width: 150px; 
     display: flex;
     flex-direction: column;
     align-items: center;
 }
 
-/* 이름이 보이지 않도록 함 */
-.player-status h3 {
-    display: none; 
-}
-
 .character-img {
-    width: 100px; /* 캐릭터 크기 키움 */
+    width: 100px; 
     height: 100px;
     background-color: #ffeb3b;
     border-radius: 50%;
@@ -70,9 +65,6 @@ body {
     background-position: center;
     transition: transform 0.3s;
 }
-.character-img:hover {
-    transform: scale(1.05);
-}
 
 /* 하트 디스플레이 */
 .heart-display {
@@ -81,7 +73,7 @@ body {
 }
 
 .heart-icon {
-    width: 30px; /* 하트 이미지 크기 */
+    width: 30px; 
     height: 30px; 
     object-fit: contain;
 }
@@ -123,17 +115,11 @@ body {
     background-color: #28a745; 
     color: white; 
 }
-.subject-btn:hover { 
-    background-color: #1e7e34; 
-}
 
 /* 난이도 버튼 */
 .difficulty-btn { 
     background-color: #007bff; 
     color: white; 
-}
-.difficulty-btn:hover { 
-    background-color: #0056b3; 
 }
 
 /* 메인으로 돌아가기 버튼 */
@@ -141,9 +127,6 @@ body {
     background-color: #6c757d; 
     color: white;
     margin-top: 20px;
-}
-.main-control-btn:hover {
-    background-color: #5a6268;
 }
 
 /* --- 2. 풀이 공간 전체 컨테이너 설정 --- */
@@ -205,9 +188,7 @@ body {
     padding: 6px 12px;
     font-size: 0.9em;
 }
-.tool-btn:hover {
-    background-color: #dee2e6;
-}
+
 .tool-btn.selected {
     background-color: #ffc107; 
     color: #212529;
@@ -215,9 +196,6 @@ body {
 .clear-btn {
     background-color: #dc3545; 
     color: white;
-}
-.clear-btn:hover {
-    background-color: #c82333;
 }
 
 /* 문제 이미지 및 제목 */
