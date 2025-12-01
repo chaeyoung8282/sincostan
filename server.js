@@ -4,11 +4,11 @@ const WebSocket = require('ws');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
-const url = require('url'); // 💡 [FIX] url 모듈 추가!
+const url = require('url'); // 💡 [FIX] url 모듈 추가: 쿼리 문자열을 분리하는 데 사용
 
 const PORT = process.env.PORT || 8080;
 
-// 💡 1. problems.json 파일에서 문제 데이터를 읽어옵니다. (problems.json 파일이 프로젝트 루트에 존재한다고 가정)
+// 💡 1. problems.json 파일에서 문제 데이터를 읽어옵니다. 
 const problemsData = JSON.parse(fs.readFileSync(path.join(__dirname, 'problems.json'), 'utf8'));
 // 💡 2. 출제된 문제를 기록할 변수 (서버 재시작 시 초기화됩니다.)
 const solvedProblems = {}; 
@@ -31,39 +31,31 @@ const server = http.createServer((req, res) => {
             const problemList = problemsData[subject][difficulty];
             const key = `${subject}-${difficulty}`;
             
-            // 이미 출제된 문제 목록을 가져옵니다.
             const publishedIds = solvedProblems[key] || [];
-
-            // 출제되지 않은 문제만 필터링합니다.
             let availableProblems = problemList.filter(p => !publishedIds.includes(p.id));
 
             let nextProblem;
 
             if (availableProblems.length === 0 && problemList.length > 0) {
-                // 모든 문제를 다 풀었으면 (5문제), 목록을 초기화하고 처음부터 다시 랜덤 출제
                 solvedProblems[key] = [];
-                availableProblems = problemList; // 전체 목록으로 재설정
+                availableProblems = problemList;
             } 
             
             if (availableProblems.length > 0) {
-                // 출제되지 않은 문제 중에서 랜덤 선택
                 const randomIndex = Math.floor(Math.random() * availableProblems.length);
                 nextProblem = availableProblems[randomIndex];
                 
-                // 선택된 문제를 출제 목록에 추가
                 if (!solvedProblems[key]) solvedProblems[key] = [];
                 solvedProblems[key].push(nextProblem.id);
             } else {
-                // (5문제가 모두 없고) 문제 목록 자체가 비어 있을 때
                  res.writeHead(404, { 'Content-Type': 'application/json' });
                  res.end(JSON.stringify({ error: '해당 난이도에는 문제가 등록되지 않았습니다.' }));
                  return;
             }
             
-            // 클라이언트에게 문제 정보 (ID와 URL) 전송
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify(nextProblem));
-            return; // API 요청 처리 완료
+            return;
         } else {
             res.writeHead(404, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ error: '잘못된 주제 또는 난이도입니다.' }));
@@ -76,6 +68,9 @@ const server = http.createServer((req, res) => {
     if (filePath === './') {
         filePath = './index.html';
     }
+
+    // 💡 /images/ 경로든 다른 경로든 모두 상대 경로로 매핑됩니다. (e.g., ./images/characters/witch.png)
+    // 파일 시스템에서 해당 경로를 찾습니다.
 
     const extname = String(path.extname(filePath)).toLowerCase();
     const mimeTypes = {
@@ -92,7 +87,7 @@ const server = http.createServer((req, res) => {
         if (err) {
             if (err.code === 'ENOENT') {
                 res.writeHead(404);
-                res.end('File not found: ' + filePath);
+                res.end('File not found: ' + filePath); // 이 메시지가 표시되면 파일 경로가 잘못된 것임
             } else {
                 res.writeHead(500);
                 res.end('Server Error: ' + err.code);
