@@ -379,6 +379,7 @@ async function loadNewQuiz(subject, difficulty) {
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
+        // 응답 JSON 구조 변경: 서버에서 문제 데이터만 바로 반환하는 경우
         const problemResponse = await response.json(); 
         
         if (problemResponse.error) {
@@ -387,16 +388,29 @@ async function loadNewQuiz(subject, difficulty) {
             return;
         }
 
+        // 🚨 서버 문제 응답 구조 확인 및 조정
+        // 서버에서 이미 출제되지 않은 문제를 선택하고 난이도 정보가 없으므로, 
+        // 퀴즈 시작 시 클라이언트에게 필요한 모든 정보를 보내도록 구조 조정 (문제 로직은 서버에 따라 다를 수 있음)
+
+        // 문제 목록 관리 (problems.json)에서 남은 문제 정보를 같이 받도록 서버 코드를 수정하지 않는 한,
+        // 클라이언트에서 문제 데이터(nextProblem)와 함께 서버가 알고 있는 '남은 문제 수' 정보를 받기 어렵습니다.
+        // 현재는 서버가 문제 데이터 자체만 반환하므로, 클라이언트에서 필요한 구조로 변환합니다.
+        
+        const syncData = {
+            nextProblem: problemResponse, // 서버가 반환한 개별 문제 객체
+            remainingProblems: [] // 서버가 남은 문제 수를 알려주지 않으므로 빈 배열로 설정
+        };
+
         // 새 문제를 성공적으로 가져왔으므로 화면 동기화
         sendWebSocketData({ 
             type: 'quiz_start', 
-            problemData: problemResponse, 
+            problemData: syncData, 
             subject: subject, 
             difficulty: difficulty 
         });
 
         // 로컬 (교사)에서 화면 동기화 함수 호출
-        syncQuizScreen(problemResponse, subject, difficulty);
+        syncQuizScreen(syncData, subject, difficulty);
 
     } catch (error) {
         console.error('퀴즈 로드 중 오류 발생. 서버 상태 또는 네트워크를 확인해주세요:', error);
@@ -407,17 +421,28 @@ async function loadNewQuiz(subject, difficulty) {
  * 퀴즈 화면에 문제 정보 및 이미지 로드
  */
 function syncQuizScreen(problemResponse, subject, difficulty) {
-    const problemData = problemResponse.nextProblem;
+    // 🚨 문제 구조 조정: server.js는 문제 자체만 반환하므로, nextProblem이 문제 데이터입니다.
+    const problemData = problemResponse.nextProblem || problemResponse; 
     const remainingProblemsCount = problemResponse.remainingProblems ? problemResponse.remainingProblems.length : 0;
     
-    if (!problemData) {
+    if (!problemData || !problemData.url) {
         console.error("문제 데이터가 유효하지 않습니다.", problemResponse);
-        alert("더 이상 남은 문제가 없거나 데이터가 유효하지 않습니다.");
+        // 서버가 에러를 JSON으로 반환한 경우, 이미 loadNewQuiz에서 처리됨
+        if (!isTeacher) {
+            alert("교사가 퀴즈를 시작하지 않았거나 문제가 없습니다.");
+        }
         showMainScreen();
         return;
     }
 
-    const subjectName = problemResponse.subjectName; 
+    // subjectName은 problems.json에서 가져와야 하지만, 현재는 하드코딩
+    const subjectNameMap = {
+        'polynomial': '다항식', 'equation': '방정식', 
+        'permutation': '순열/조합', 'matrix': '행렬',
+        // 필요한 다른 과목 추가
+    };
+    const subjectName = subjectNameMap[subject] || subject; 
+    
     const difficultyName = difficultyMap[difficulty].name;
     const problemUrl = problemData.url;
     
@@ -435,17 +460,15 @@ function syncQuizScreen(problemResponse, subject, difficulty) {
     // 2. 문제 이미지 로딩 
     let actualImagePath;
     const systemFileName = problemData.system_file_name;
-    if (difficulty === 'easy' && systemFileName) {
-        actualImagePath = resolveImagePath(systemFileName);
-    } else {
-        actualImagePath = resolveImagePath(problemUrl); 
-    }
+    // system_file_name 처리는 현재 서버 코드로 확인이 어려우므로 url을 사용
+    actualImagePath = resolveImagePath(problemUrl); 
     
     // 정답 이미지 URL 저장
     currentAnswerUrl = problemData.answer_url; 
     
     // 현재 문제/난이도 표시 업데이트
-    currentSubjectDifficulty.textContent = `${subjectName} / ${difficultyName} (ID: ${problemData.id}) (남은 문제: ${remainingProblemsCount}개)`;
+    // 서버에서 남은 문제 개수를 알려주지 않으므로, 이 부분은 제거
+    currentSubjectDifficulty.textContent = `${subjectName} / ${difficultyName} (ID: ${problemData.id})`;
     
     // 3. 이미지 로딩 에러 핸들러 설정 
     problemImage.onerror = () => {
@@ -618,6 +641,7 @@ function setupWebSocket() {
                 break;
             case 'quiz_start': 
             case 'new_quiz_problem': 
+                // problemResponse 구조 변경 대응 (서버가 문제 데이터만 반환하는 경우)
                 syncQuizScreen(data.problemData, data.subject, data.difficulty);
                 break;
             case 'timer_finished':
