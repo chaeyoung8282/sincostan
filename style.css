@@ -17,10 +17,10 @@ body {
     background-color: #ffffff; 
     border: 1px solid #ddd;
     border-radius: 8px; 
-    position: relative; /* 타이머 절대 위치의 기준점 */
+    position: relative; 
 }
 
-/* --- 메인 제목 및 UI --- */
+/* --- 메인 제목 및 UI (생략) --- */
 h1 {
     font-size: 2.3em; 
     color: #0056b3; 
@@ -33,110 +33,21 @@ h1 {
     margin-bottom: 20px; 
 }
 
-/* ------------------------------------------- */
-/* 메인 화면 캐릭터/제목 레이아웃 (생략) */
-/* ------------------------------------------- */
-
-#header-content-wrapper {
-    display: flex;
-    justify-content: center; 
-    align-items: flex-start; 
-    gap: 50px; 
-    margin-bottom: 20px; 
-}
-
-.main-title-block {
-    flex-shrink: 0; 
-    text-align: center;
-}
-
-.player-info-container {
-    width: 180px; 
-    text-align: center;
-    padding: 5px; 
-    border: 1px solid #ddd; 
-    border-radius: 8px;
-    background-color: #fff;
-    box-shadow: none; 
-}
-
-.character-image {
-    width: 80px; 
-    height: 80px; 
-    margin: 0 auto 5px;
-    background-size: cover;
-    background-position: center;
-    border-radius: 50%;
-    border: 2px solid #0056b3;
-}
-
-.player-name {
-    font-weight: bold;
-    font-size: 1em; 
-    margin-bottom: 5px;
-}
-
-.heart-display {
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap; 
-    gap: 1px; 
-}
-
-.heart-icon {
-    width: 20px; 
-    height: 20px; 
-}
+/* (메인 화면 캐릭터/제목 레이아웃 스타일 생략 - 이전과 동일) */
+#header-content-wrapper { display: flex; justify-content: center; align-items: flex-start; gap: 50px; margin-bottom: 20px; }
+.main-title-block { flex-shrink: 0; text-align: center; }
+.player-info-container { width: 180px; text-align: center; padding: 5px; border: 1px solid #ddd; border-radius: 8px; background-color: #fff; box-shadow: none; }
+.character-image { width: 80px; height: 80px; margin: 0 auto 5px; background-size: cover; background-position: center; border-radius: 50%; border: 2px solid #0056b3; }
+.player-name { font-weight: bold; font-size: 1em; margin-bottom: 5px; }
+.heart-display { display: flex; justify-content: center; flex-wrap: wrap; gap: 1px; }
+.heart-icon { width: 20px; height: 20px; }
 
 
 /* ------------------------------------------- */
-/* 💡 [CRUCIAL MODIFICATION] 타이머 오버레이 스타일 */
+/* 💡 [CRUCIAL MODIFICATION] 문제/풀이 영역 복구 및 타이머 정렬 */
 /* ------------------------------------------- */
 
-.timer-display {
-    position: absolute;
-    /* 💡 [MODIFIED] 타이머 하단이 정답/오답 버튼 하단과 일치하도록 top 위치 조정 */
-    /* top을 70%로 설정하여 캔버스, 도구 버튼, 채점 버튼을 포함하는 영역의 하단에 가깝게 이동 */
-    top: 80%; 
-    left: 50%;
-    transform: translate(-50%, -50%); /* 중앙 정렬 */
-    z-index: 10; 
-    
-    /* 타이머 디자인 */
-    font-size: 1.8em; 
-    font-weight: bold;
-    color: #0056b3; 
-    padding: 10px 20px; 
-    border: 4px solid #0056b3;
-    border-radius: 12px;
-    background-color: rgba(255, 255, 255, 0.9); 
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
-    transition: all 0.3s ease; 
-}
-
-/* 긴급 깜빡임 애니메이션은 유지 */
-@keyframes urgent-blink {
-    0%, 100% { 
-        border-color: #dc3545; 
-        color: #dc3545; 
-        transform: translate(-50%, -50%) scale(1.0);
-    }
-    50% { 
-        border-color: #ffc107; 
-        color: #ffc107; 
-        transform: translate(-50%, -50%) scale(1.05);
-    }
-}
-
-.timer-display.urgent {
-    animation: urgent-blink 0.5s infinite alternate; 
-}
-
-
-/* ------------------------------------------- */
-/* 문제/풀이 영역 스타일 (유지) */
-/* ------------------------------------------- */
-
+/* 문제 영역: 문제와 풀이 공간 간격 제거 */
 #problem-area {
     margin-bottom: 0; 
     padding: 0 5px; 
@@ -145,5 +56,160 @@ h1 {
 #problem-image {
     max-width: 95%; 
     height: auto;
+    margin-bottom: 0; 
+}
+
+/* 풀이 영역 컨테이너: Flexbox 복구 */
+#solving-container {
+    display: flex; 
+    justify-content: center; 
+    gap: 5px; /* 풀이 공간 사이의 간격 (p1/p2 area와 timer-wrapper 간의 간격) */
+    margin: 0 auto; /* 상하 마진 제거 */
+    max-width: 1150px; 
+    align-items: stretch; /* 세 요소의 높이를 맞춤 */
+}
+
+/* 각 플레이어의 풀이 영역 */
+.player-writing-area {
+    flex: 1; 
+    min-width: 48%; 
+    border: 1px solid #ced4da; 
+    border-radius: 4px;
+    padding: 5px; 
+    background-color: #f8f9fa; 
+    display: flex;
+    flex-direction: column; 
+    justify-content: space-between; /* 캔버스와 도구를 위아래로 분리 */
+}
+
+.player-writing-area h3 {
+    margin-top: 2px; 
+    margin-bottom: 2px; 
+    font-size: 1em; 
+}
+
+/* 캔버스 높이 */
+.writing-canvas {
+    width: 100%; 
+    height: 280px; 
+    border: 1px solid #adb5bd; 
+    background-color: #ffffff;
+    cursor: crosshair;
+    border-radius: 4px;
     margin-bottom: 5px; 
+}
+
+/* 도구 버튼 영역 */
+.drawing-tools {
+    margin-top: 3px; 
+    display: flex;
+    flex-wrap: wrap; 
+    justify-content: center;
+    gap: 2px; 
+}
+
+.tool-btn {
+    padding: 3px 6px; 
+    font-size: 0.75em; 
+}
+
+/* 채점 버튼 영역 */
+.score-buttons {
+    margin-top: 3px; 
+}
+
+.grade-btn {
+    padding: 5px 10px; 
+    font-size: 0.85em;
+}
+
+/* 💡 [NEW] 타이머 위치 래퍼: 두 풀이 영역 사이의 좁은 공간 */
+#timer-position-wrapper {
+    /* 양쪽 풀이 영역 사이의 좁은 공간을 위한 flex 속성 */
+    flex-basis: 120px; /* 너비 고정 */
+    flex-shrink: 0;
+    
+    /* 래퍼 내부 타이머를 정렬 */
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end; /* 💡 [CRUCIAL] 타이머를 아래쪽으로 밀착 */
+    align-items: center;
+    padding-bottom: 20px; /* 채점 버튼의 하단 높이에 맞추기 위한 여백 (조절 필요) */
+}
+
+
+/* 타이머 스타일: 중앙에 위치하고 버튼 하단과 일치하도록 조정 */
+.timer-display {
+    font-size: 1.5em; 
+    font-weight: bold;
+    color: #0056b3; 
+    margin: 0; /* 래퍼가 위치를 조정하므로 마진 제거 */
+    padding: 5px 10px; 
+    border: 3px solid #0056b3;
+    border-radius: 8px;
+    display: inline-block; 
+    background-color: #e6f0ff;
+    transition: all 0.3s ease; 
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* 긴급 깜빡임 애니메이션은 유지 */
+@keyframes urgent-blink {
+    0%, 100% { 
+        border-color: #dc3545; 
+        color: #dc3545; 
+        transform: scale(1.0);
+    }
+    50% { 
+        border-color: #ffc107; 
+        color: #ffc107; 
+        transform: scale(1.05);
+    }
+}
+
+.timer-display.urgent {
+    animation: urgent-blink 0.5s infinite alternate; 
+}
+
+
+/* --- 나머지 스타일 유지 --- */
+
+.subject-group {
+    margin-bottom: 15px; 
+    padding: 10px; 
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    background-color: #ffffff;
+}
+
+.main-control-btn {
+    margin-top: 10px; 
+}
+
+#score-effect-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+#score-effect-message {
+    padding: 30px 60px;
+    font-size: 3em;
+    font-weight: bold;
+    color: white;
+    border-radius: 15px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    animation: fade-in 0.5s ease-out;
+}
+
+@keyframes fade-in {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
 }
