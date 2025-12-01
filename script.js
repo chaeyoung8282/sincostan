@@ -43,8 +43,7 @@ const drawingState = {
 // 💡 [NEW] 전역 데이터 및 상태
 // =========================================================
 
-// --- 문제 관련 데이터 (가정된 problems.json 구조에 기반) ---
-// (실제 problems.json에서 데이터를 읽어와야 하지만, 클라이언트 측에서 처리할 수 없으므로, API를 통해 데이터를 가져오는 로직을 사용합니다.)
+// --- 문제 관련 데이터 ---
 const SUBJECT_NAMES = {
     polynomial: "다항식",
     equation: "방정식과 부등식",
@@ -54,9 +53,6 @@ const SUBJECT_NAMES = {
     set: "집합과 명제",
     function: "함수와 그래프"
 };
-
-// 이 변수는 서버 API 호출 성공 후 설정됩니다.
-// let problemsData = {}; 
 
 // --- 캐릭터/HP 관련 상수 설정 ---
 const CHARACTER_CONFIG = {
@@ -73,8 +69,6 @@ const CHARACTER_CONFIG = {
 };
 
 const IMAGE_ROOT_PATH = "images/characters/";
-const PROBLEM_IMG_ROOT = "images/"; // 문제 이미지는 images/subject/level_id.png 구조를 따름
-
 const HEART_FILES = {
     FULL: "full_heart.png",
     HALF: "half_heart.png",
@@ -165,21 +159,19 @@ function updateHeartDisplay(playerId, hp) {
 }
 
 /**
- * 캐릭터 이미지와 이름을 UI에 설정합니다.
+ * 💡 [MODIFIED] 캐릭터 이미지를 UI에 설정합니다. (메인 화면용)
  */
 function setupCharacterUI() {
-    // 플레이어 1 설정
-    document.querySelector('#status-p1 h3').textContent = CHARACTER_CONFIG.P1.name;
+    // 플레이어 1 설정 (이름 설정 제거)
     document.getElementById('char-p1').style.backgroundImage = `url(${IMAGE_ROOT_PATH}${CHARACTER_CONFIG.P1.imageFile})`;
 
-    // 플레이어 2 설정
-    document.querySelector('#status-p2 h3').textContent = CHARACTER_CONFIG.P2.name;
+    // 플레이어 2 설정 (이름 설정 제거)
     document.getElementById('char-p2').style.backgroundImage = `url(${IMAGE_ROOT_PATH}${CHARACTER_CONFIG.P2.imageFile})`;
 }
 
 
 // =========================================================
-// 1. 드로잉 및 캔버스 관련 로직 (기존 로직 유지)
+// 1. 드로잉 및 캔버스 관련 로직 (생략)
 // =========================================================
 
 function performDrawing(playerId, fromX, fromY, toX, toY, color, mode) {
@@ -315,7 +307,7 @@ function setupQuizView() {
     const player2Area = document.querySelector('.player-writing-area[data-player="p2"]');
     
     if (isTeacher) {
-        // 교사 모드: P1, P2 모두 표시하고 채점 버튼 표시
+        // 교사 모드
         player1Area.style.display = 'block';
         player2Area.style.display = 'block';
         document.getElementById('tools-p1').style.display = 'flex';
@@ -327,7 +319,7 @@ function setupQuizView() {
         player2Area.querySelector('.writing-canvas').style.height = '400px'; 
         
     } else {
-        // 학생 모드: 자신의 영역만 크게 표시
+        // 학생 모드
         const playerConfig = myPlayerId === 'p1' ? CHARACTER_CONFIG.P1 : CHARACTER_CONFIG.P2;
 
         if (myPlayerId === 'p1') {
@@ -373,27 +365,24 @@ function showMainScreen() {
 
 
 // =========================================================
-// 3. 메인 UI 이벤트 로직 (버튼 클릭 로직)
+// 3. 메인 UI 이벤트 로직
 // =========================================================
 
 /**
- * 💡 [FIX] 주제 및 난이도 버튼 클릭 이벤트를 설정합니다.
+ * 주제 및 난이도 버튼 클릭 이벤트를 설정합니다.
  */
 function setupMainUiEvents() {
     
     // 1. 주제 버튼 클릭 이벤트
     document.querySelectorAll('.subject-btn').forEach(button => {
         button.addEventListener('click', (e) => {
-            if (!isTeacher) return; // 교사만 퀴즈 시작 가능
+            if (!isTeacher) return; 
             
-            // 기존 선택된 버튼 해제
             document.querySelectorAll('.subject-btn').forEach(btn => btn.classList.remove('selected'));
             
-            // 현재 버튼 선택
             currentSubject = e.target.dataset.subject;
             e.target.classList.add('selected');
             
-            // 난이도 선택 화면 표시
             difficultySelection.style.display = 'block';
         });
     });
@@ -401,12 +390,10 @@ function setupMainUiEvents() {
     // 2. 난이도 버튼 클릭 이벤트
     document.querySelectorAll('.difficulty-btn').forEach(button => {
         button.addEventListener('click', (e) => {
-            if (!isTeacher) return; // 교사만 퀴즈 시작 가능
+            if (!isTeacher) return; 
             
-            // 난이도 설정
             currentDifficulty = e.target.dataset.difficulty;
             
-            // 퀴즈 시작
             loadNewQuiz();
         });
     });
@@ -428,7 +415,7 @@ async function loadNewQuiz() {
         return;
     }
     
-    showQuizScreen(); // 로딩 화면 표시
+    showQuizScreen(); // 로딩 화면 표시 (선생님 화면 전환)
     
     // 1. 서버 API 호출
     const url = `/api/quiz/${currentSubject}/${currentDifficulty}`;
@@ -442,10 +429,10 @@ async function loadNewQuiz() {
         
         const problem = await response.json();
         
-        // 2. 문제 정보 설정 및 동기화 메시지 전송
+        // 2. 문제 정보 설정
         syncQuizScreen(problem);
         
-        // 3. 캔버스 초기화 (로컬에서 직접 수행)
+        // 3. 캔버스 초기화 
         setupCanvasContext(ctxP1);
         setupCanvasContext(ctxP2);
 
@@ -472,26 +459,21 @@ async function loadNewQuiz() {
  */
 function syncQuizScreen(problem) {
     const subjectName = SUBJECT_NAMES[currentSubject] || currentSubject;
-    
-    // problems.json에 url 필드가 /images/polynomial/easy_1.png 형태로 저장되어 있다고 가정합니다.
     const imagePath = problem.url; 
 
     currentSubjectDifficulty.textContent = `${subjectName} / ${problem.id}`;
     
-    // 💡 [FIXED] 이미지 로딩 에러 핸들러 설정
     problemImage.onerror = () => {
         console.error(`이미지 로드 실패 (404): ${imagePath}.`); 
         problemImage.src = `https://placehold.co/800x250/dc3545/ffffff?text=로딩+실패!+파일경로:+${imagePath}`;
     };
     
-    // 💡 이미지 소스 설정: Render는 정적 파일을 프로젝트 루트 기준으로 제공하므로, 절대 경로(/images/...)를 사용합니다.
     problemImage.src = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
     
-    // 캔버스 크기 재설정 (혹시 모를 에러 방지)
     canvasP1.width = CANVAS_WIDTH; canvasP1.height = CANVAS_HEIGHT;
     canvasP2.width = CANVAS_WIDTH; canvasP2.height = CANVAS_HEIGHT;
 
-    setupQuizView(); // 레이아웃 재설정
+    setupQuizView(); 
 }
 
 /**
@@ -510,7 +492,7 @@ function showQuizScreen() {
 
 
 // =========================================================
-// 5. 채점 및 효과 로직 (기존 로직 유지)
+// 5. 채점 및 효과 로직 (생략)
 // =========================================================
 
 /**
@@ -522,19 +504,17 @@ function setupScoringEvents() {
         
         button.addEventListener('click', (e) => {
             const playerId = e.target.getAttribute('data-player');
-            const result = e.target.getAttribute('data-result'); // 'correct' or 'incorrect'
+            const result = e.target.getAttribute('data-result'); 
             
             let newHp = playerHP[playerId];
             if (result === 'correct') {
-                newHp += 1.0; // +1 하트 (FULL)
+                newHp += 1.0; 
             } else if (result === 'incorrect') {
-                newHp -= 0.5; // -0.5 하트 (HALF)
+                newHp -= 0.5; 
             }
             
-            // HP 업데이트
             updateHeartDisplay(playerId, newHp);
             
-            // WS 동기화
             sendWebSocketData({
                 type: 'score_update',
                 playerId: playerId,
@@ -542,7 +522,6 @@ function setupScoringEvents() {
                 newHp: playerHP[playerId] 
             });
             
-            // 교사 화면에서 바로 효과 표시
             showScoreEffect(result, playerId);
         });
     });
@@ -560,10 +539,10 @@ function showScoreEffect(result, playerId) {
     
     if (result === 'correct') {
         message = `${playerCharName} 정답! (❤️ +1)`;
-        bgColor = 'rgba(40, 167, 69, 0.9)'; // 초록색
+        bgColor = 'rgba(40, 167, 69, 0.9)'; 
     } else {
         message = `${playerCharName} 오답.. (💔 -0.5)`;
-        bgColor = 'rgba(220, 53, 69, 0.9)'; // 빨간색
+        bgColor = 'rgba(220, 53, 69, 0.9)'; 
     }
     
     scoreEffectMessage.textContent = message;
@@ -594,7 +573,7 @@ function setupWebSocket() {
                 performDrawing(data.playerId, data.from.x, data.from.y, data.to.x, data.to.y, data.color, data.mode);
                 break;
             case 'clear':
-                setupCanvasContext(drawingState[data.playerId].ctx); // 캔버스 배경을 흰색으로 다시 칠함
+                setupCanvasContext(drawingState[data.playerId].ctx); 
                 break;
             case 'back_to_main': 
                 if (!isTeacher) { 
@@ -605,7 +584,10 @@ function setupWebSocket() {
                 if (!isTeacher) {
                     currentSubject = data.subject;
                     currentDifficulty = data.difficulty;
+                    showQuizScreen(); // 퀴즈 화면으로 전환 (동기화 핵심 수정)
                     syncQuizScreen(data.problem);
+                    setupCanvasContext(ctxP1); // 캔버스 내용 초기화
+                    setupCanvasContext(ctxP2); // 캔버스 내용 초기화
                 }
                 break;
             case 'score_update': 
@@ -644,20 +626,20 @@ window.onload = async () => {
     setupCanvasListeners('p1');
     setupCanvasListeners('p2');
     
-    // 4. 💡 [FIX] 메인 UI 버튼 리스너 설정
+    // 4. 메인 UI 버튼 리스너 설정
     setupMainUiEvents(); 
     
     // 5. 채점 버튼 리스너 설정 (교사 전용)
     setupScoringEvents(); 
     
-    // 6. 캐릭터 이름 및 이미지 설정
+    // 6. 캐릭터 이름 및 이미지 설정 (메인 화면)
     setupCharacterUI();
     
-    // 7. 초기 HP 표시 (5개 하트)
+    // 7. 초기 HP 표시 (메인 화면)
     updateHeartDisplay('p1', playerHP.p1);
     updateHeartDisplay('p2', playerHP.p2);
     
-    // 8. 초기 레이아웃 설정
+    // 8. 초기 레이아웃 설정 (퀴즈 화면용)
     setupQuizView();
     
     console.log(`[Init] 역할: ${isTeacher ? '교사' : '학생'}, ID: ${myPlayerId}`);
