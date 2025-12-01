@@ -13,7 +13,7 @@ const backToMainBtn = document.getElementById('back-to-main');
 const difficultySelection = document.getElementById('difficulty-selection');
 const solvingContainer = document.getElementById('solving-container'); // 레이아웃 변경용
 
-// 💡 [NEW] 채점 및 효과 관련 요소
+// 💡 채점 및 효과 관련 요소
 const scoreButtonsP1 = document.getElementById('score-buttons-p1');
 const scoreButtonsP2 = document.getElementById('score-buttons-p2');
 const scoreEffectOverlay = document.getElementById('score-effect-overlay');
@@ -40,7 +40,7 @@ const drawingState = {
 };
 
 // =========================================================
-// 💡 [NEW] 전역 데이터 및 상태
+// 전역 데이터 및 상태
 // =========================================================
 
 // --- 문제 관련 데이터 ---
@@ -68,7 +68,8 @@ const CHARACTER_CONFIG = {
     }
 };
 
-const IMAGE_ROOT_PATH = "images/characters/";
+// 💡 [FIXED] 이미지 루트 경로를 서버 루트 기준 절대 경로로 수정 (404 오류 해결)
+const IMAGE_ROOT_PATH = "/images/characters/"; 
 const HEART_FILES = {
     FULL: "full_heart.png",
     HALF: "half_heart.png",
@@ -151,7 +152,7 @@ function updateHeartDisplay(playerId, hp) {
             currentHp = 0; 
         }
         
-        // <img> 태그를 사용하여 하트 이미지 표시
+        // 💡 [FIXED] 이미지 경로에 IMAGE_ROOT_PATH 사용
         html += `<img src="${IMAGE_ROOT_PATH}${heartSrc}" alt="Heart" class="heart-icon">`;
     }
     
@@ -159,13 +160,11 @@ function updateHeartDisplay(playerId, hp) {
 }
 
 /**
- * 💡 [MODIFIED] 캐릭터 이미지를 UI에 설정합니다. (메인 화면용)
+ * 캐릭터 이미지를 UI에 설정합니다. (메인 화면용)
  */
 function setupCharacterUI() {
-    // 플레이어 1 설정 (이름 설정 제거)
+    // 💡 [FIXED] 이미지 경로에 IMAGE_ROOT_PATH 사용
     document.getElementById('char-p1').style.backgroundImage = `url(${IMAGE_ROOT_PATH}${CHARACTER_CONFIG.P1.imageFile})`;
-
-    // 플레이어 2 설정 (이름 설정 제거)
     document.getElementById('char-p2').style.backgroundImage = `url(${IMAGE_ROOT_PATH}${CHARACTER_CONFIG.P2.imageFile})`;
 }
 
@@ -268,7 +267,7 @@ function setupCanvasListeners(playerId) {
     canvas.addEventListener('touchend', stopDrawing);
     canvas.addEventListener('touchcancel', stopDrawing);
     
-    // 툴 버튼 리스너 (기존 로직 유지 및 WS 클리어 동기화 추가)
+    // 툴 버튼 리스너
     document.querySelectorAll(`#tools-${playerId} .tool-btn`).forEach(button => {
         button.addEventListener('click', (e) => {
             document.querySelectorAll(`#tools-${playerId} .tool-btn`).forEach(btn => btn.classList.remove('selected'));
@@ -296,18 +295,19 @@ function setupCanvasListeners(playerId) {
 
 
 // =========================================================
-// 2. UI/레이아웃 및 동기화 로직
+// 2. UI/레이아웃 및 동기화 로직 (생략)
 // =========================================================
 
 /**
  * 교사/학생 역할에 따라 퀴즈 화면 레이아웃을 설정합니다.
  */
 function setupQuizView() {
+    // 💡 HTML 구조 변경에 따라 선택자를 수정했습니다.
     const player1Area = document.querySelector('.player-writing-area[data-player="p1"]');
     const player2Area = document.querySelector('.player-writing-area[data-player="p2"]');
     
     if (isTeacher) {
-        // 교사 모드
+        // 교사 모드: P1, P2 모두 표시하고 채점 버튼 표시
         player1Area.style.display = 'block';
         player2Area.style.display = 'block';
         document.getElementById('tools-p1').style.display = 'flex';
@@ -319,7 +319,7 @@ function setupQuizView() {
         player2Area.querySelector('.writing-canvas').style.height = '400px'; 
         
     } else {
-        // 학생 모드
+        // 학생 모드: 자신의 영역만 크게 표시
         const playerConfig = myPlayerId === 'p1' ? CHARACTER_CONFIG.P1 : CHARACTER_CONFIG.P2;
 
         if (myPlayerId === 'p1') {
@@ -365,7 +365,7 @@ function showMainScreen() {
 
 
 // =========================================================
-// 3. 메인 UI 이벤트 로직
+// 3. 메인 UI 이벤트 로직 (생략)
 // =========================================================
 
 /**
@@ -468,6 +468,7 @@ function syncQuizScreen(problem) {
         problemImage.src = `https://placehold.co/800x250/dc3545/ffffff?text=로딩+실패!+파일경로:+${imagePath}`;
     };
     
+    // 이미지 소스 설정: Render는 정적 파일을 프로젝트 루트 기준으로 제공하므로, 절대 경로(/images/...)를 사용합니다.
     problemImage.src = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
     
     canvasP1.width = CANVAS_WIDTH; canvasP1.height = CANVAS_HEIGHT;
@@ -560,6 +561,7 @@ function showScoreEffect(result, playerId) {
 // =========================================================
 
 function setupWebSocket() {
+    // 💡 Render 환경에 맞춰 프로토콜 및 호스트 사용
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host;
     ws = new WebSocket(`${protocol}//${host}`);
@@ -580,14 +582,14 @@ function setupWebSocket() {
                     showMainScreen(); 
                 }
                 break;
-            case 'new_quiz': // 💡 [FIX] 새로운 퀴즈 요청 동기화
+            case 'new_quiz': 
                 if (!isTeacher) {
                     currentSubject = data.subject;
                     currentDifficulty = data.difficulty;
-                    showQuizScreen(); // 퀴즈 화면으로 전환 (동기화 핵심 수정)
+                    showQuizScreen(); 
                     syncQuizScreen(data.problem);
-                    setupCanvasContext(ctxP1); // 캔버스 내용 초기화
-                    setupCanvasContext(ctxP2); // 캔버스 내용 초기화
+                    setupCanvasContext(ctxP1); 
+                    setupCanvasContext(ctxP2); 
                 }
                 break;
             case 'score_update': 
