@@ -66,7 +66,7 @@ const SUBJECT_NAMES = {
     function: "함수와 그래프"
 };
 
-// 💡 [NEW] 공통수학 1 (BASIC STAGE)에 해당하는 주제 목록
+// 공통수학 1 (BASIC STAGE)에 해당하는 주제 목록
 const BASIC_STAGE_SUBJECTS = ['polynomial', 'equation', 'permutation', 'matrix']; 
 
 // --- 캐릭터/HP 관련 상수 설정 ---
@@ -93,6 +93,14 @@ const HEART_FILES = {
 
 // 하트 아이콘의 최대 표시 개수를 설정합니다.
 const MAX_HEART_SLOTS = 10; 
+
+
+// --- 타이머 관련 상수/변수 ---
+const QUIZ_TIME_SECONDS = 60; // 문제당 시간 (초)
+const ALERT_TIME_SECONDS = 10; // 긴급 깜빡임 시작 시간 (초)
+let quizTimer = null;
+let timeLeft = QUIZ_TIME_SECONDS;
+const quizTimerDisplay = document.getElementById('quiz-timer'); // HTML에서 추가된 요소
 
 let currentSubject = '';
 let currentDifficulty = '';
@@ -358,6 +366,12 @@ function showMainScreen() {
     difficultySelection.style.display = 'none';
     scoreEffectOverlay.style.display = 'none';
 
+    // 💡 [FIX] 타이머 정지
+    if (quizTimer) {
+        clearInterval(quizTimer); 
+        quizTimer = null;
+    }
+    
     // 💡 교사일 경우에만 WS 메시지를 보내 다른 클라이언트를 동기화
     if (isTeacher) {
         sendWebSocketData({ type: 'back_to_main' });
@@ -391,7 +405,7 @@ function setupMainUiEvents() {
             currentSubject = e.target.dataset.subject;
             e.target.classList.add('selected');
             
-            // 💡 [FIX] 공통수학 1(BASIC STAGE)을 위한 '상' 난이도 버튼 제어
+            // 공통수학 1(BASIC STAGE)을 위한 '상' 난이도 버튼 제어
             const hardBtn = document.querySelector('.difficulty-btn[data-difficulty="hard"]');
             
             if (BASIC_STAGE_SUBJECTS.includes(currentSubject)) {
@@ -451,6 +465,9 @@ async function loadNewQuiz() {
         // 2. 문제 정보 설정
         syncQuizScreen(problem);
         
+        // 💡 [NEW] 타이머 시작
+        startQuizTimer();
+        
         // 3. 캔버스 초기화 
         setupCanvasContext(ctxP1);
         setupCanvasContext(ctxP2);
@@ -508,6 +525,47 @@ function showQuizScreen() {
     
     currentSubjectDifficulty.textContent = loadingMessage;
     problemImage.src = `https://placehold.co/800x250/3498db/ffffff?text=${encodeURIComponent(loadingMessage)}`;
+}
+
+/**
+ * 💡 [NEW] 타이머를 시작하고 1초마다 업데이트합니다.
+ */
+function startQuizTimer() {
+    // 1. 기존 타이머 제거
+    if (quizTimer) {
+        clearInterval(quizTimer);
+    }
+    
+    // 2. 초기 상태 설정
+    timeLeft = QUIZ_TIME_SECONDS;
+    if (quizTimerDisplay) {
+        quizTimerDisplay.textContent = `남은 시간: ${timeLeft}초`;
+        quizTimerDisplay.classList.remove('urgent'); // 초기화
+    }
+    
+    // 3. 타이머 시작
+    quizTimer = setInterval(() => {
+        timeLeft--;
+        
+        if (quizTimerDisplay) {
+             quizTimerDisplay.textContent = `남은 시간: ${timeLeft}초`;
+        }
+       
+        // 4. 긴급 깜빡임 효과 적용
+        if (timeLeft <= ALERT_TIME_SECONDS) {
+            quizTimerDisplay.classList.add('urgent');
+        }
+        
+        // 5. 시간 종료 처리
+        if (timeLeft <= 0) {
+            clearInterval(quizTimer);
+            if (quizTimerDisplay) {
+                 quizTimerDisplay.textContent = 'TIME OVER!';
+            }
+           
+            // TODO: (선택 사항) 시간이 초과되었을 때 정답/오답 처리를 강제로 진행하거나 HP를 차감하는 로직을 여기에 추가할 수 있습니다.
+        }
+    }, 1000);
 }
 
 
@@ -609,6 +667,8 @@ function setupWebSocket() {
                     syncQuizScreen(data.problem);
                     setupCanvasContext(ctxP1); 
                     setupCanvasContext(ctxP2); 
+                    // 💡 [NEW] 학생 클라이언트에서도 타이머 시작
+                    startQuizTimer(); 
                 }
                 break;
             case 'score_update': 
