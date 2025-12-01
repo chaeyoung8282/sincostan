@@ -65,13 +65,13 @@ let timeRemaining = 0;
 let ws = null; 
 let currentAnswerUrl = ''; 
 
-// 🚨 [수정] 역할 및 플레이어 식별 변수: 기본값은 학생(false)으로 변경!
+// 🚨 역할 및 플레이어 식별 변수: 기본값은 학생(false)으로 변경!
 let isTeacher = false; 
 let myPlayerId = 'p1'; 
 
 
 // =========================================================
-// 0. 역할/플레이어 식별 로직 (🚨 [수정])
+// 0. 역할/플레이어 식별 로직
 // =========================================================
 
 /**
@@ -83,7 +83,7 @@ function getRoleAndPlayerId() {
     // 1. 교사 역할 설정 (?role=teacher)
     if (params.get('role') === 'teacher') {
         isTeacher = true;
-        myPlayerId = 'teacher'; // 교사용 ID 설정 (드로잉에는 사용되지 않음)
+        myPlayerId = 'teacher'; 
         
     // 2. 학생 역할 설정 (?player=p1 또는 ?player=p2)
     } else if (params.get('player')) {
@@ -97,7 +97,7 @@ function getRoleAndPlayerId() {
             myPlayerId = 'p1';
         }
     } else {
-        // 🚨 [수정] 파라미터가 없는 경우 (index.html만 접속) -> P1 학생으로 간주
+        // 🚨 파라미터가 없는 경우 (index.html만 접속) -> P1 학생으로 간주
         isTeacher = false;
         myPlayerId = 'p1';
         console.warn('[Role Setup] No parameters found. Defaulting to Student P1 mode.');
@@ -112,7 +112,7 @@ function getRoleAndPlayerId() {
 
 
 // =========================================================
-// 1. 드로잉 및 캔버스 관련 로직 (기존과 동일)
+// 1. 드로잉 및 캔버스 관련 로직
 // =========================================================
 
 /**
@@ -136,7 +136,7 @@ function setupCanvasListeners(playerId) {
         
         // 터치 또는 마우스 이벤트에서 좌표를 가져옵니다.
         const clientX = e.clientX || e.touches[0].clientX;
-        const clientY = e.touches[0].clientY;
+        const clientY = e.clientY || e.touches[0].clientY;
         
         return {
             x: (clientX - rect.left) * scaleX,
@@ -286,7 +286,7 @@ function setupToolEvents() {
 }
 
 // =========================================================
-// 2. 타이머 로직 (기존과 동일)
+// 2. 타이머 로직
 // =========================================================
 
 function startTimer(durationInSeconds) {
@@ -351,7 +351,7 @@ function updateTimerDisplay(timeInSeconds) {
 
 
 // =========================================================
-// 3. 문제 로딩 및 동기화 로직 (기존과 동일)
+// 3. 문제 로딩 및 동기화 로직
 // =========================================================
 
 const difficultyMap = {
@@ -469,7 +469,7 @@ function syncQuizScreen(problemResponse, subject, difficulty) {
 
 
 // =========================================================
-// 4. 메인 UI 이벤트 및 정답 로직 (기존과 동일)
+// 4. 메인 UI 이벤트 및 정답 로직
 // =========================================================
 
 function showMainScreen() {
@@ -594,7 +594,7 @@ function setupAnswerEvents() {
 
 
 // =========================================================
-// 5. WebSocket 동기화 로직 (기존과 동일)
+// 5. WebSocket 동기화 로직
 // =========================================================
 
 function setupWebSocket() {
@@ -625,4 +625,145 @@ function setupWebSocket() {
                 timerDisplayTop.textContent = "⏱️ 시간 종료! (00:00)";
                 timerDisplayTop.classList.remove('critical-time');
                 if (isTeacher) { 
-                    revealAnswerBtn.style.display = 'inline-
+                    revealAnswerBtn.style.display = 'inline-block';
+                }
+                break;
+            case 'answer_revealed':
+                currentAnswerUrl = data.answerUrl; 
+                answerImage.src = currentAnswerUrl;
+                answerRevealOverlay.style.display = 'flex';
+                launchConfetti(); 
+                break;
+            case 'answer_closed':
+                answerRevealOverlay.style.display = 'none';
+                confettiContainer.innerHTML = '';
+                break;
+            default:
+                console.warn('알 수 없는 WebSocket 메시지 타입:', data.type);
+        }
+    };
+
+    ws.onclose = () => {
+        console.log('❌ WebSocket 연결 종료');
+    };
+    
+    ws.onerror = (error) => {
+        console.error('WebSocket 오류 발생:', error);
+    };
+}
+
+/**
+ * WebSocket을 통해 서버로 데이터를 전송
+ */
+function sendWebSocketData(data) {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify(data));
+    } else {
+        console.warn('WebSocket이 연결되지 않아 데이터를 전송할 수 없습니다.', data);
+    }
+}
+
+
+// =========================================================
+// 6. 뷰포트 설정 로직 (교사/학생 분리)
+// =========================================================
+
+function setupQuizView() {
+    const player1Area = document.querySelector('.player-writing-area[data-player="p1"]');
+    const player2Area = document.querySelector('.player-writing-area[data-player="p2"]');
+    
+    if (isTeacher) {
+        // 교사 모드: 모든 요소를 표시하고 기본 레이아웃 복원
+        if (player1Area) {
+            player1Area.style.display = 'block';
+            player1Area.style.flex = '1';
+            player1Area.style.width = 'auto';
+            player1Area.style.minWidth = '500px'; 
+            player1Area.querySelector('.writing-canvas').style.height = '400px'; 
+            player1Area.querySelector('h3').textContent = '풀이 공간 (P1)'; 
+            const tools1 = player1Area.querySelector('.drawing-tools');
+            if (tools1) tools1.style.display = 'flex'; 
+        }
+        if (player2Area) {
+            player2Area.style.display = 'block';
+            player2Area.style.flex = '1';
+            player2Area.style.width = 'auto';
+            player2Area.style.minWidth = '500px'; 
+            player2Area.querySelector('.writing-canvas').style.height = '400px'; 
+            player2Area.querySelector('h3').textContent = '풀이 공간 (P2)'; 
+            const tools2 = player2Area.querySelector('.drawing-tools');
+            if (tools2) tools2.style.display = 'flex'; 
+        }
+        if (quizAreaContainer) {
+            quizAreaContainer.style.display = 'flex';
+            quizAreaContainer.style.gap = '20px'; 
+        }
+        timerDisplayTop.style.display = 'block'; 
+        return;
+    }
+
+    // 학생 모드
+    
+    timerDisplayTop.style.display = 'none'; 
+    
+    if (quizAreaContainer) {
+        quizAreaContainer.style.gap = '0'; 
+        quizAreaContainer.style.display = 'flex';
+    }
+
+    let activeArea = (myPlayerId === 'p1') ? player1Area : player2Area;
+    let hiddenArea = (myPlayerId === 'p1') ? player2Area : player1Area;
+    
+    // 1. 활성화된 학생의 캔버스 영역 설정 (크게)
+    if (activeArea) {
+        activeArea.style.display = 'block';
+        activeArea.style.flex = '1'; 
+        activeArea.style.width = '100%'; 
+        activeArea.style.minWidth = 'auto'; 
+        activeArea.querySelector('.writing-canvas').style.height = '600px'; // 캔버스 높이 키우기
+        activeArea.querySelector('h3').textContent = '나의 풀이'; // 제목 변경
+        const activeTools = activeArea.querySelector('.drawing-tools');
+        if (activeTools) activeTools.style.display = 'flex'; // 도구 표시
+    }
+    
+    // 2. 다른 플레이어의 캔버스 영역을 강력하게 숨깁니다.
+    if (hiddenArea) {
+        hiddenArea.style.display = 'none';
+        hiddenArea.style.flex = '0 0 0'; 
+        hiddenArea.style.width = '0';
+        hiddenArea.style.minWidth = '0';
+        
+        // 도구 영역도 명시적으로 숨김
+        const hiddenTools = hiddenArea.querySelector('.drawing-tools');
+        if (hiddenTools) hiddenTools.style.display = 'none';
+    }
+}
+
+
+// =========================================================
+// 7. 초기화
+// =========================================================
+
+window.onload = async () => {
+    // 1. 역할 및 플레이어 ID를 먼저 설정합니다. (기본값: 학생 P1)
+    getRoleAndPlayerId(); 
+    
+    // 2. 캔버스 드로잉 리스너 설정 (자신의 캔버스만 활성화)
+    setupCanvasListeners('p1');
+    setupCanvasListeners('p2');
+    
+    // 3. 도구 버튼 리스너 설정 (자신의 도구만 활성화)
+    setupToolEvents(); 
+    
+    // 4. 메인 UI 버튼 리스너 설정 (학생일 경우 비활성화)
+    setupMainUiEvents();
+    
+    // 5. 정답 이벤트 설정 
+    setupAnswerEvents(); 
+    
+    // 6. 퀴즈 화면 레이아웃 설정 (교사/학생 뷰 분리)
+    setupQuizView(); 
+    
+    // 7. WebSocket 연결 시작
+    setupWebSocket(); 
+};
