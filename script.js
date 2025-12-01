@@ -81,7 +81,7 @@ const CHARACTER_CONFIG = {
 };
 
 // 💡 [FIXED] 이미지 루트 경로를 서버 루트 기준 절대 경로로 수정 (404 오류 해결)
-const IMAGE_ROOT_PATH = "/images/characters/"; 
+const IMAGE_ROOT_PATH = "/images/character/"; 
 const HEART_FILES = {
     FULL: "full_heart.png",
     HALF: "half_heart.png",
