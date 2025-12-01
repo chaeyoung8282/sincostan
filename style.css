@@ -34,10 +34,9 @@ h1 {
 }
 
 /* ------------------------------------------- */
-/* 메인 화면 캐릭터/제목 레이아웃 */
+/* 메인 화면 캐릭터/제목 레이아웃 (생략) */
 /* ------------------------------------------- */
 
-/* (생략: 메인 화면 스타일은 이전과 동일하게 유지됩니다.) */
 #header-content-wrapper {
     display: flex;
     justify-content: center; 
@@ -96,11 +95,11 @@ h1 {
 
 .timer-display {
     position: absolute;
-    /* 💡 [MODIFIED] 문제 영역 하단 + 캔버스 높이 + 도구 버튼 높이 절반 고려 */
-    /* 대략적인 값으로, 필요에 따라 브라우저에서 미세 조정 */
-    top: calc(10px + 250px + 280px + 20px); /* problem-area top margin + problem-image height + canvas height + 중간 여백 */
+    /* 💡 [MODIFIED] 타이머 하단이 정답/오답 버튼 하단과 일치하도록 top 위치 조정 */
+    /* top을 70%로 설정하여 캔버스, 도구 버튼, 채점 버튼을 포함하는 영역의 하단에 가깝게 이동 */
+    top: 80%; 
     left: 50%;
-    transform: translate(-50%, -50%); 
+    transform: translate(-50%, -50%); /* 중앙 정렬 */
     z-index: 10; 
     
     /* 타이머 디자인 */
@@ -135,10 +134,9 @@ h1 {
 
 
 /* ------------------------------------------- */
-/* 문제/풀이 영역 스타일 (이전 요청대로 유지) */
+/* 문제/풀이 영역 스타일 (유지) */
 /* ------------------------------------------- */
 
-/* 문제 영역 */
 #problem-area {
     margin-bottom: 0; 
     padding: 0 5px; 
@@ -147,119 +145,5 @@ h1 {
 #problem-image {
     max-width: 95%; 
     height: auto;
-    /* 💡 [MODIFIED] 타이머 위치 고려하여 하단 마진 추가 (필요시 조절) */
     margin-bottom: 5px; 
-}
-
-
-/* 풀이 영역 컨테이너 */
-#solving-container {
-    display: flex; 
-    justify-content: center; 
-    gap: 5px; 
-    /* 💡 [MODIFIED] 타이머가 겹쳐지므로 상단 마진을 0으로 */
-    margin: 0 auto; 
-    max-width: 1150px; 
-    padding-top: 5px; /* 타이머와 겹치는 부분의 여백을 확보 (조절 가능) */
-}
-
-/* 각 플레이어의 풀이 영역 */
-.player-writing-area {
-    flex: 1; 
-    min-width: 48%; 
-    border: 1px solid #ced4da; 
-    border-radius: 4px;
-    padding: 5px; 
-    background-color: #f8f9fa; 
-    display: flex;
-    flex-direction: column; 
-    justify-content: space-between; 
-}
-
-.player-writing-area h3 {
-    margin-top: 2px; 
-    margin-bottom: 2px; 
-    font-size: 1em; 
-}
-
-/* 캔버스 높이 */
-.writing-canvas {
-    width: 100%; 
-    height: 280px; 
-    border: 1px solid #adb5bd; 
-    background-color: #ffffff;
-    cursor: crosshair;
-    border-radius: 4px;
-    margin-bottom: 5px; 
-}
-
-/* 도구 버튼 배치 및 스타일 (유지) */
-.drawing-tools {
-    margin-top: 3px; 
-    display: flex;
-    flex-wrap: wrap; 
-    justify-content: center;
-    gap: 2px; 
-    /* 💡 [MODIFIED] 타이머와 겹치므로 z-index 낮춰서 타이머가 항상 위에 오도록 */
-    position: relative; 
-    z-index: 5; /* 타이머보다 낮게 설정 */
-}
-
-.tool-btn {
-    padding: 3px 6px; 
-    font-size: 0.75em; 
-}
-
-.score-buttons {
-    margin-top: 3px; 
-    position: relative; 
-    z-index: 5; /* 타이머보다 낮게 설정 */
-}
-
-.grade-btn {
-    padding: 5px 10px; 
-    font-size: 0.85em;
-}
-
-
-/* --- 나머지 스타일 유지 --- */
-
-.subject-group {
-    margin-bottom: 15px; 
-    padding: 10px; 
-    border: 1px solid #e0e0e0;
-    border-radius: 4px;
-    background-color: #ffffff;
-}
-
-.main-control-btn {
-    margin-top: 10px; 
-}
-
-#score-effect-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-}
-
-#score-effect-message {
-    padding: 30px 60px;
-    font-size: 3em;
-    font-weight: bold;
-    color: white;
-    border-radius: 15px;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-    animation: fade-in 0.5s ease-out;
-}
-
-@keyframes fade-in {
-    from { opacity: 0; transform: scale(0.9); }
-    to { opacity: 1; transform: scale(1); }
 }
