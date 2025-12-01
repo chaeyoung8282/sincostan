@@ -10,9 +10,24 @@
 <body>
 
     <div id="main-screen">
-        <h1>스트릿 매쓰 파이터</h1>
-        <h2 class="subtitle">난이도별 수학 문제 챌린지</h2>
 
+        <div id="main-title-container">
+            <div id="status-p1" class="player-status">
+                <div class="character-img" id="char-p1"></div>
+                <div class="heart-display" id="hearts-p1"></div>
+            </div>
+            
+            <div id="title-wrapper">
+                <h1>스트릿 매쓰 파이터</h1>
+                <h2 class="subtitle">난이도별 수학 문제 챌린지</h2>
+            </div>
+            
+            <div id="status-p2" class="player-status">
+                <div class="character-img" id="char-p2"></div>
+                <div class="heart-display" id="hearts-p2"></div>
+            </div>
+        </div>
+        
         <div class="subject-group">
             <h2>⚔️ 공통수학 1 : BASIC STAGE</h2>
             <div id="subject-buttons-group-1">
@@ -41,20 +56,6 @@
     </div>
 
     <div id="quiz-screen" style="display: none;">
-
-        <div id="player-status-bar">
-            <div id="status-p1" class="player-status">
-                <h3>플레이어 1</h3>
-                <div class="character-img" id="char-p1" style="background-image: url('https://placehold.co/80x80/007bff/ffffff?text=P1');"></div>
-                <div class="heart-display" id="hearts-p1"></div>
-            </div>
-
-            <div id="status-p2" class="player-status">
-                <h3>플레이어 2</h3>
-                <div class="character-img" id="char-p2" style="background-image: url('https://placehold.co/80x80/dc3545/ffffff?text=P2');"></div>
-                <div class="heart-display" id="hearts-p2"></div>
-            </div>
-        </div>
         
         <div id="problem-area">
             <h2>문제 : <span id="current-subject-difficulty"></span></h2>
