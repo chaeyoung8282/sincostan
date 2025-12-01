@@ -13,7 +13,7 @@ const backToMainBtn = document.getElementById('back-to-main');
 const difficultySelection = document.getElementById('difficulty-selection');
 const timerDisplayTop = document.getElementById('timer-display-top'); // 상단 타이머
 const timerDisplayBottom = document.getElementById('timer-display-bottom'); // 하단 타이머
-const quizAreaContainer = document.getElementById('quiz-area-container'); // 🚨 [추가] 캔버스 전체 컨테이너
+const quizAreaContainer = document.getElementById('quiz-area-container'); // 캔버스 전체 컨테이너
 
 // 정답 공개 관련 요소
 const revealAnswerBtn = document.getElementById('reveal-answer-btn');
@@ -65,20 +65,17 @@ let timeRemaining = 0; // 남은 시간
 let ws = null; // WebSocket 연결 객체
 let currentAnswerUrl = ''; // 현재 문제의 정답 URL을 저장할 변수
 
-// 🚨 [추가] 역할 및 플레이어 식별 변수
+// 역할 및 플레이어 식별 변수
 let isTeacher = true; // 기본값은 Teacher (파라미터가 없으면 호스트로 간주)
 let myPlayerId = 'p1'; // 현재 클라이언트의 플레이어 ID (학생 모드일 때만 의미 있음)
 
 
 // =========================================================
-// 0. 역할/플레이어 식별 로직 (🚨 [추가])
+// 0. 역할/플레이어 식별 로직
 // =========================================================
 
 /**
  * URL 파라미터를 파싱하여 역할과 플레이어 ID를 설정합니다.
- * - Teacher: ?role=teacher
- * - Student 1: ?player=p1
- * - Student 2: ?player=p2
  */
 function getRoleAndPlayerId() {
     const params = new URLSearchParams(window.location.search);
@@ -93,15 +90,12 @@ function getRoleAndPlayerId() {
             isTeacher = false;
             myPlayerId = player;
         } else {
-            // 잘못된 player 파라미터가 들어온 경우 (Teacher로 기본 설정)
             isTeacher = true; 
         }
     } else {
-        // 파라미터가 없는 경우 (기존처럼 Teacher가 호스트하도록 설정)
         isTeacher = true;
     }
     
-    // 학생 모드일 경우 console.log로 현재 플레이어를 확인합니다.
     if (!isTeacher) {
         console.log(`[Role Setup] Student Mode 활성화. 현재 플레이어: ${myPlayerId}`);
     } else {
@@ -121,7 +115,7 @@ function getRoleAndPlayerId() {
 function setupCanvasListeners(playerId) {
     const state = drawingState[playerId];
     
-    // 🚨 [수정] 학생 모드일 경우, 자신의 캔버스에만 리스너를 추가합니다.
+    // 학생 모드일 경우, 자신의 캔버스에만 리스너를 추가합니다.
     if (!isTeacher && playerId !== myPlayerId) {
         state.canvas.style.pointerEvents = 'none'; // 클릭 불가 처리
         return; 
@@ -239,7 +233,7 @@ function setupToolEvents() {
     document.querySelectorAll('.tool-btn').forEach(button => {
         const player = button.getAttribute('data-player');
         
-        // 🚨 [수정] 학생 모드일 경우, 자신의 도구만 활성화합니다.
+        // 학생 모드일 경우, 자신의 도구만 활성화합니다.
         if (!isTeacher && player !== myPlayerId) {
             button.disabled = true;
             button.style.opacity = '0.5';
@@ -247,8 +241,7 @@ function setupToolEvents() {
         }
 
         button.addEventListener('click', (e) => {
-            // ... 기존 로직 유지 ...
-            const mode = e.target.getAttribute('data-mode') || 'pen'; // mode가 없으면 pen
+            const mode = e.target.getAttribute('data-mode') || 'pen'; 
 
             // 동일 플레이어의 모든 버튼에서 'selected' 클래스 제거
             document.querySelectorAll(`.drawing-tools [data-player="${player}"]`).forEach(btn => {
@@ -274,7 +267,7 @@ function setupToolEvents() {
     document.querySelectorAll('.clear-btn').forEach(button => {
         const player = button.getAttribute('data-player');
         
-        // 🚨 [수정] 학생 모드일 경우, 자신의 지우개만 활성화합니다.
+        // 학생 모드일 경우, 자신의 지우개만 활성화합니다.
         if (!isTeacher && player !== myPlayerId) {
             return; 
         }
@@ -313,7 +306,7 @@ function updateTimerDisplay(timeInSeconds) {
     
     const displayTime = `${minutes}:${seconds}`;
     
-    // 🚨 [수정] 교사 모드일 때만 상단 타이머를 사용
+    // 교사 모드일 때만 상단 타이머를 사용
     if (isTeacher) {
         timerDisplayTop.textContent = `⏱️ 남은 시간: ${displayTime}`;
     }
@@ -334,7 +327,7 @@ function updateTimerDisplay(timeInSeconds) {
         timerDisplayTop.textContent = "⏱️ 시간 종료! (00:00)";
         timerDisplayTop.classList.remove('critical-time');
         
-        // 🚨 [수정] 교사 모드일 때만 정답 확인 버튼 표시
+        // 교사 모드일 때만 정답 확인 버튼 표시
         if (isTeacher) {
             revealAnswerBtn.style.display = 'inline-block';
         }
@@ -351,7 +344,7 @@ function updateTimerDisplay(timeInSeconds) {
 
 
 // =========================================================
-// 3. 문제 로딩 및 동기화 로직 (기존과 동일)
+// 3. 문제 로딩 및 동기화 로직
 // =========================================================
 
 const difficultyMap = {
@@ -407,7 +400,6 @@ async function loadNewQuiz(subject, difficulty) {
  * 퀴즈 화면에 문제 정보 및 이미지 로드
  */
 function syncQuizScreen(problemResponse, subject, difficulty) {
-    // 서버 응답 객체의 구조를 확인하여 문제 데이터를 가져옵니다.
     const problemData = problemResponse.nextProblem;
     const remainingProblemsCount = problemResponse.remainingProblems ? problemResponse.remainingProblems.length : 0;
     
@@ -433,7 +425,7 @@ function syncQuizScreen(problemResponse, subject, difficulty) {
     clearCanvas('p1');
     clearCanvas('p2');
 
-    // 2. 문제 이미지 로딩 (기존 로직 유지)
+    // 2. 문제 이미지 로딩 
     let actualImagePath;
     const systemFileName = problemData.system_file_name;
     if (difficulty === 'easy' && systemFileName) {
@@ -448,7 +440,7 @@ function syncQuizScreen(problemResponse, subject, difficulty) {
     // 현재 문제/난이도 표시 업데이트
     currentSubjectDifficulty.textContent = `${subjectName} / ${difficultyName} (ID: ${problemData.id}) (남은 문제: ${remainingProblemsCount}개)`;
     
-    // 3. 이미지 로딩 에러 핸들러 설정 (기존 로직 유지)
+    // 3. 이미지 로딩 에러 핸들러 설정 
     problemImage.onerror = () => {
         problemImage.src = `https://placehold.co/800x250/dc3545/ffffff?text=로딩+실패!`;
     };
@@ -464,13 +456,13 @@ function syncQuizScreen(problemResponse, subject, difficulty) {
     revealAnswerBtn.style.display = 'none'; 
     answerRevealOverlay.style.display = 'none'; // 오버레이 숨기기
     
-    // 🚨 [추가] 퀴즈 화면 레이아웃을 다시 설정 (크기 재조정)
+    // 퀴즈 화면 레이아웃을 다시 설정 (크기 재조정 및 영역 숨김)
     setupQuizView(); 
 }
 
 
 // =========================================================
-// 4. 메인 UI 이벤트 및 정답 로직
+// 4. 메인 UI 이벤트 및 정답 로직 (기존과 동일)
 // =========================================================
 
 function showMainScreen() {
@@ -480,8 +472,6 @@ function showMainScreen() {
         clearInterval(timerInterval);
     }
 }
-
-// ... launchConfetti, showAnswer (기존과 동일) ...
 
 /**
  * 팡파레 효과 (Confetti)를 발생시키는 함수
@@ -513,10 +503,8 @@ function showAnswer() {
     answerImage.src = currentAnswerUrl;
     answerRevealOverlay.style.display = 'flex';
     
-    // 팡파레 효과 실행!
     launchConfetti();
     
-    // 다른 클라이언트에게 정답 공개 상태 동기화
     sendWebSocketData({
         type: 'answer_revealed',
         answerUrl: currentAnswerUrl,
@@ -528,30 +516,26 @@ function showAnswer() {
  * 메인 화면 UI 이벤트 설정
  */
 function setupMainUiEvents() {
-    // 공통수학 1 (BASIC STAGE)에 해당하는 주제 목록
     const basicSubjects = ['polynomial', 'equation', 'permutation', 'matrix']; 
 
-    // 🚨 [수정] 학생 역할일 경우 메인 화면 버튼 클릭을 비활성화합니다.
+    // 학생 역할일 경우 메인 화면 버튼 클릭을 비활성화합니다.
     if (!isTeacher) {
         document.querySelectorAll('.subject-btn, .difficulty-btn').forEach(button => {
             button.disabled = true;
             button.style.cursor = 'default';
             button.style.opacity = '0.7';
         });
-        // 학생에게 난이도 선택 영역은 계속 표시 (교사 선택 시 동기화되는 것을 보여주기 위해)
         difficultySelection.style.display = 'block'; 
         return; 
     }
 
     // 교사일 경우 기존 로직 유지
-    // 주제 버튼 클릭 이벤트
     document.querySelectorAll('.subject-btn').forEach(button => {
         button.addEventListener('click', (e) => {
             document.querySelectorAll('.subject-btn').forEach(btn => btn.classList.remove('selected'));
             e.target.classList.add('selected');
             currentSubject = e.target.getAttribute('data-subject');
             
-            // 난이도 버튼 가시성 제어 로직
             if (hardDifficultyBtn) {
                 if (basicSubjects.includes(currentSubject)) {
                     hardDifficultyBtn.style.display = 'none';
@@ -560,12 +544,10 @@ function setupMainUiEvents() {
                 }
             }
             
-            // 난이도 선택 화면 표시
             difficultySelection.style.display = 'block';
         });
     });
 
-    // 난이도 버튼 클릭 이벤트
     document.querySelectorAll('.difficulty-btn').forEach(button => {
         button.addEventListener('click', (e) => {
             document.querySelectorAll('.difficulty-btn').forEach(btn => btn.classList.remove('selected'));
@@ -578,7 +560,6 @@ function setupMainUiEvents() {
         });
     });
 
-    // 메인으로 돌아가기 버튼
     backToMainBtn.addEventListener('click', showMainScreen);
 }
 
@@ -588,7 +569,6 @@ function setupMainUiEvents() {
 function setupAnswerEvents() {
     // 1. '정답 확인하기' 버튼 클릭 시
     revealAnswerBtn.addEventListener('click', () => {
-        // 교사(호스트) 클라이언트에서만 showAnswer를 호출하여 동기화 시작
         if (isTeacher) {
             showAnswer();
         }
@@ -597,9 +577,8 @@ function setupAnswerEvents() {
     // 2. '닫기' 버튼 클릭 시 오버레이 닫기
     closeAnswerBtn.addEventListener('click', () => {
         answerRevealOverlay.style.display = 'none';
-        confettiContainer.innerHTML = ''; // 효과 정리
+        confettiContainer.innerHTML = ''; 
         
-        // 교사 클라이언트에서만 닫기 상태 동기화
         if (isTeacher) {
             sendWebSocketData({ type: 'answer_closed' });
         }
@@ -638,7 +617,7 @@ function setupWebSocket() {
                 if (timerInterval) clearInterval(timerInterval);
                 timerDisplayTop.textContent = "⏱️ 시간 종료! (00:00)";
                 timerDisplayTop.classList.remove('critical-time');
-                if (isTeacher) { // 교사만 정답 버튼 표시
+                if (isTeacher) { 
                     revealAnswerBtn.style.display = 'inline-block';
                 }
                 break;
@@ -679,7 +658,7 @@ function sendWebSocketData(data) {
 
 
 // =========================================================
-// 6. 뷰포트 설정 로직 (교사/학생 분리) (🚨 [추가])
+// 6. 뷰포트 설정 로직 (교사/학생 분리)
 // =========================================================
 
 function setupQuizView() {
@@ -687,49 +666,69 @@ function setupQuizView() {
     const player2Area = document.querySelector('.player-writing-area[data-player="p2"]');
     
     if (isTeacher) {
-        // 교사 모드: 모든 요소를 표시합니다. (기존 레이아웃 유지)
-        if (player1Area) player1Area.style.display = 'block';
-        if (player2Area) player2Area.style.display = 'block';
-        if (quizAreaContainer) quizAreaContainer.style.display = 'flex';
-        
-        // 교사는 상단 타이머를 사용
+        // 교사 모드: 모든 요소를 표시하고 기본 레이아웃 복원
+        if (player1Area) {
+            player1Area.style.display = 'block';
+            player1Area.style.flex = '1';
+            player1Area.style.width = 'auto';
+            player1Area.style.minWidth = '500px'; 
+            player1Area.querySelector('.writing-canvas').style.height = '400px'; // 기본 높이 복원
+            player1Area.querySelector('h3').textContent = '풀이 공간 (P1)'; // 제목 복원
+            const tools1 = player1Area.querySelector('.drawing-tools');
+            if (tools1) tools1.style.display = 'flex'; // 도구 표시
+        }
+        if (player2Area) {
+            player2Area.style.display = 'block';
+            player2Area.style.flex = '1';
+            player2Area.style.width = 'auto';
+            player2Area.style.minWidth = '500px'; 
+            player2Area.querySelector('.writing-canvas').style.height = '400px'; // 기본 높이 복원
+            player2Area.querySelector('h3').textContent = '풀이 공간 (P2)'; // 제목 복원
+            const tools2 = player2Area.querySelector('.drawing-tools');
+            if (tools2) tools2.style.display = 'flex'; // 도구 표시
+        }
+        if (quizAreaContainer) {
+            quizAreaContainer.style.display = 'flex';
+            quizAreaContainer.style.gap = '20px'; // 기본 갭 복원
+        }
         timerDisplayTop.style.display = 'block'; 
         return;
     }
 
     // 학생 모드
     
-    // 학생은 상단 타이머를 숨깁니다.
     timerDisplayTop.style.display = 'none'; 
     
-    // 퀴즈 영역 컨테이너 설정 (캔버스 하나만 꽉 차게)
     if (quizAreaContainer) {
         quizAreaContainer.style.gap = '0'; 
+        quizAreaContainer.style.display = 'flex';
     }
 
-    let activeArea;
-    let hiddenArea;
-
-    if (myPlayerId === 'p1') {
-        activeArea = player1Area;
-        hiddenArea = player2Area;
-    } else { // myPlayerId === 'p2'
-        activeArea = player2Area;
-        hiddenArea = player1Area;
-    }
+    let activeArea = (myPlayerId === 'p1') ? player1Area : player2Area;
+    let hiddenArea = (myPlayerId === 'p1') ? player2Area : player1Area;
     
-    // 활성화된 학생의 캔버스 영역을 설정
+    // 1. 활성화된 학생의 캔버스 영역 설정 (크게)
     if (activeArea) {
         activeArea.style.display = 'block';
-        activeArea.style.flex = 'none'; 
-        activeArea.style.width = '100%'; // 전체 너비 사용
+        activeArea.style.flex = '1'; 
+        activeArea.style.width = '100%'; 
+        activeArea.style.minWidth = 'auto'; 
         activeArea.querySelector('.writing-canvas').style.height = '600px'; // 캔버스 높이 키우기
         activeArea.querySelector('h3').textContent = '나의 풀이'; // 제목 변경
+        const activeTools = activeArea.querySelector('.drawing-tools');
+        if (activeTools) activeTools.style.display = 'flex'; // 도구 표시
     }
     
-    // 다른 플레이어의 캔버스 영역을 숨깁니다.
+    // 2. 다른 플레이어의 캔버스 영역을 강력하게 숨깁니다.
     if (hiddenArea) {
         hiddenArea.style.display = 'none';
+        hiddenArea.style.flex = '0 0 0'; // 레이아웃에서 공간을 차지하지 않도록 설정
+        hiddenArea.style.width = '0';
+        hiddenArea.style.minWidth = '0';
+        
+        // 도구 영역도 명시적으로 숨김
+        const hiddenTools = hiddenArea.querySelector('.drawing-tools');
+        if (hiddenTools) hiddenTools.style.display = 'none';
     }
 }
 
