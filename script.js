@@ -83,7 +83,7 @@ const CHARACTER_CONFIG = {
     }
 };
 
-// 폴더 이름이 'character'라고 가정합니다.
+// 폴더 이름이 'character'라고 가정하고 수정합니다.
 const IMAGE_ROOT_PATH = "/images/character/"; 
 const HEART_FILES = {
     FULL: "full_heart.png",
@@ -100,7 +100,7 @@ const QUIZ_TIME_SECONDS = 60; // 문제당 시간 (초)
 const ALERT_TIME_SECONDS = 10; // 긴급 깜빡임 시작 시간 (초)
 let quizTimer = null;
 let timeLeft = QUIZ_TIME_SECONDS;
-const quizTimerDisplay = document.getElementById('quiz-timer'); 
+const quizTimerDisplay = document.getElementById('quiz-timer'); // HTML에서 추가된 요소
 
 let currentSubject = '';
 let currentDifficulty = '';
@@ -366,7 +366,7 @@ function showMainScreen() {
     difficultySelection.style.display = 'none';
     scoreEffectOverlay.style.display = 'none';
 
-    // 타이머 정지
+    // 💡 [FIX] 타이머 정지
     if (quizTimer) {
         clearInterval(quizTimer); 
         quizTimer = null;
@@ -465,7 +465,7 @@ async function loadNewQuiz() {
         // 2. 문제 정보 설정
         syncQuizScreen(problem);
         
-        // 타이머 시작 (교사 화면)
+        // 💡 [NEW] 타이머 시작
         startQuizTimer();
         
         // 3. 캔버스 초기화 
@@ -528,7 +528,7 @@ function showQuizScreen() {
 }
 
 /**
- * 타이머를 시작하고 1초마다 업데이트합니다.
+ * 💡 [NEW] 타이머를 시작하고 1초마다 업데이트합니다.
  */
 function startQuizTimer() {
     // 1. 기존 타이머 제거
@@ -542,3 +542,186 @@ function startQuizTimer() {
         quizTimerDisplay.textContent = `남은 시간: ${timeLeft}초`;
         quizTimerDisplay.classList.remove('urgent'); // 초기화
     }
+    
+    // 3. 타이머 시작
+    quizTimer = setInterval(() => {
+        timeLeft--;
+        
+        if (quizTimerDisplay) {
+             quizTimerDisplay.textContent = `남은 시간: ${timeLeft}초`;
+        }
+       
+        // 4. 긴급 깜빡임 효과 적용
+        if (timeLeft <= ALERT_TIME_SECONDS) {
+            quizTimerDisplay.classList.add('urgent');
+        }
+        
+        // 5. 시간 종료 처리
+        if (timeLeft <= 0) {
+            clearInterval(quizTimer);
+            if (quizTimerDisplay) {
+                 quizTimerDisplay.textContent = 'TIME OVER!';
+            }
+           
+            // TODO: (선택 사항) 시간이 초과되었을 때 정답/오답 처리를 강제로 진행하거나 HP를 차감하는 로직을 여기에 추가할 수 있습니다.
+        }
+    }, 1000);
+}
+
+
+// =========================================================
+// 5. 채점 및 효과 로직 
+// =========================================================
+
+/**
+ * 채점 버튼 이벤트 설정 (교사 전용)
+ */
+function setupScoringEvents() {
+    document.querySelectorAll('.grade-btn').forEach(button => {
+        if (!isTeacher) { return; }
+        
+        button.addEventListener('click', (e) => {
+            const playerId = e.target.getAttribute('data-player');
+            const result = e.target.getAttribute('data-result'); 
+            
+            let newHp = playerHP[playerId];
+            if (result === 'correct') {
+                newHp += 1.0; 
+            } else if (result === 'incorrect') {
+                newHp -= 0.5; 
+            }
+            
+            updateHeartDisplay(playerId, newHp);
+            
+            sendWebSocketData({
+                type: 'score_update',
+                playerId: playerId,
+                result: result,
+                newHp: playerHP[playerId] 
+            });
+            
+            showScoreEffect(result, playerId);
+        });
+    });
+}
+
+/**
+ * 채점 결과에 따른 시각적 효과를 표시합니다.
+ */
+function showScoreEffect(result, playerId) {
+    const playerConfig = playerId === 'p1' ? CHARACTER_CONFIG.P1 : CHARACTER_CONFIG.P2;
+    const playerCharName = playerConfig.name;
+
+    let message = '';
+    let bgColor = '';
+    
+    if (result === 'correct') {
+        message = `${playerCharName} 정답! (❤️ +1)`;
+        bgColor = 'rgba(40, 167, 69, 0.9)'; 
+    } else {
+        message = `${playerCharName} 오답.. (💔 -0.5)`;
+        bgColor = 'rgba(220, 53, 69, 0.9)'; 
+    }
+    
+    scoreEffectMessage.textContent = message;
+    scoreEffectMessage.style.backgroundColor = bgColor;
+    scoreEffectOverlay.style.display = 'flex';
+    
+    setTimeout(() => {
+        scoreEffectOverlay.style.display = 'none';
+    }, 2000);
+}
+
+
+// =========================================================
+// 6. WebSocket 동기화 로직
+// =========================================================
+
+function setupWebSocket() {
+    // 💡 Render 환경에 맞춰 프로토콜 및 호스트 사용
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.host;
+    ws = new WebSocket(`${protocol}//${host}`);
+
+    ws.onopen = () => { console.log('✅ WebSocket 연결 성공'); };
+    ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        
+        switch (data.type) {
+            case 'draw':
+                performDrawing(data.playerId, data.from.x, data.from.y, data.to.x, data.to.y, data.color, data.mode);
+                break;
+            case 'clear':
+                setupCanvasContext(drawingState[data.playerId].ctx); 
+                break;
+            case 'back_to_main': 
+                if (!isTeacher) { 
+                    showMainScreen(); 
+                }
+                break;
+            case 'new_quiz': 
+                if (!isTeacher) {
+                    currentSubject = data.subject;
+                    currentDifficulty = data.difficulty;
+                    showQuizScreen(); 
+                    syncQuizScreen(data.problem);
+                    setupCanvasContext(ctxP1); 
+                    setupCanvasContext(ctxP2); 
+                    // 💡 [NEW] 학생 클라이언트에서도 타이머 시작
+                    startQuizTimer(); 
+                }
+                break;
+            case 'score_update': 
+                updateHeartDisplay(data.playerId, data.newHp);
+                showScoreEffect(data.result, data.playerId);
+                break;
+            default:
+                console.warn('알 수 없는 WebSocket 메시지 타입:', data.type);
+        }
+    };
+    ws.onclose = () => { console.log('❌ WebSocket 연결 종료'); };
+    ws.onerror = (error) => { console.error('WebSocket 오류 발생:', error); };
+}
+
+function sendWebSocketData(data) {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify(data));
+    } else {
+        console.warn('WebSocket이 연결되지 않아 데이터를 전송할 수 없습니다.', data);
+    }
+}
+
+
+// =========================================================
+// 7. 초기화
+// =========================================================
+
+window.onload = async () => {
+    // 1. 역할 및 플레이어 ID를 먼저 설정합니다.
+    getRoleAndPlayerId(); 
+    
+    // 2. WebSocket 연결 설정
+    setupWebSocket();
+    
+    // 3. 캔버스 드로잉 리스너 설정
+    setupCanvasListeners('p1');
+    setupCanvasListeners('p2');
+    
+    // 4. 메인 UI 버튼 리스너 설정
+    setupMainUiEvents(); 
+    
+    // 5. 채점 버튼 리스너 설정 (교사 전용)
+    setupScoringEvents(); 
+    
+    // 6. 캐릭터 이름 및 이미지 설정 (메인 화면)
+    setupCharacterUI();
+    
+    // 7. 초기 HP 표시 (메인 화면)
+    updateHeartDisplay('p1', playerHP.p1);
+    updateHeartDisplay('p2', playerHP.p2);
+    
+    // 8. 초기 레이아웃 설정 (퀴즈 화면용)
+    setupQuizView();
+    
+    console.log(`[Init] 역할: ${isTeacher ? '교사' : '학생'}, ID: ${myPlayerId}`);
+};
