@@ -11,59 +11,59 @@ body {
 /* --- 메인 화면/퀴즈 화면 컨테이너: 간격 최소화 --- */
 #main-screen, #quiz-screen {
     max-width: 1200px; 
-    margin: 20px auto; /* 마진 감소 */
+    margin: 10px auto; /* 마진 최소화 */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); 
+    padding: 10px; /* 패딩 최소화 */
     background-color: #ffffff; 
     border: 1px solid #ddd;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* 그림자도 약간 줄임 */
-    padding: 20px; /* 패딩 감소 */
     border-radius: 8px; 
 }
 
 /* --- 메인 제목 및 UI --- */
 h1 {
-    font-size: 2.3em; /* 폰트 크기 약간 감소 */
+    font-size: 2.3em; 
     color: #0056b3; 
-    margin: 10px 0 5px; /* 마진 감소 */
+    margin: 10px 0 5px; 
 }
 
 .subtitle {
     font-size: 1.2em;
     color: #555;
-    margin-bottom: 20px; /* 마진 감소 */
+    margin-bottom: 20px; 
 }
 
 /* ------------------------------------------- */
-/* 💡 [MODIFIED] 메인 화면 캐릭터/제목 레이아웃 (중앙 정렬) */
+/* 메인 화면 캐릭터/제목 레이아웃 */
 /* ------------------------------------------- */
 
 /* 캐릭터와 제목을 가로로 정렬하는 컨테이너 */
 #header-content-wrapper {
     display: flex;
-    justify-content: center; /* 중앙 정렬 */
+    justify-content: center; 
     align-items: flex-start; 
-    gap: 50px; /* 캐릭터와 제목 사이의 간격 (중앙으로 모임) */
-    margin-bottom: 20px; /* 마진 감소 */
+    gap: 50px; 
+    margin-bottom: 20px; 
 }
 
 .main-title-block {
-    flex-shrink: 0; /* 제목 블록이 줄어들지 않도록 설정 */
+    flex-shrink: 0; 
     text-align: center;
 }
 
 /* 캐릭터 정보 컨테이너 */
 .player-info-container {
-    width: 180px; /* 너비 감소 */
+    width: 180px; 
     text-align: center;
-    padding: 5px; /* 패딩 감소 */
-    border: 1px solid #ddd; /* 테두리 얇게 */
+    padding: 5px; 
+    border: 1px solid #ddd; 
     border-radius: 8px;
     background-color: #fff;
-    box-shadow: none; /* 그림자 제거 */
+    box-shadow: none; 
 }
 
 .character-image {
-    width: 80px; /* 크기 감소 */
-    height: 80px; /* 크기 감소 */
+    width: 80px; 
+    height: 80px; 
     margin: 0 auto 5px;
     background-size: cover;
     background-position: center;
@@ -73,7 +73,7 @@ h1 {
 
 .player-name {
     font-weight: bold;
-    font-size: 1em; /* 폰트 크기 감소 */
+    font-size: 1em; 
     margin-bottom: 5px;
 }
 
@@ -81,24 +81,24 @@ h1 {
     display: flex;
     justify-content: center;
     flex-wrap: wrap; 
-    gap: 1px; /* 하트 간격 최소화 */
+    gap: 1px; 
 }
 
 .heart-icon {
-    width: 20px; /* 하트 크기 감소 */
-    height: 20px; /* 하트 크기 감소 */
+    width: 20px; 
+    height: 20px; 
 }
 
 /* ------------------------------------------- */
-/* 💡 [MODIFIED] 타이머 스타일 (문제/풀이 사이) */
+/* 💡 [CRUCIAL] 타이머 스타일 축소 */
 /* ------------------------------------------- */
 
 .timer-display {
-    font-size: 1.8em; /* 폰트 크기 약간 감소 */
+    font-size: 1.5em; /* 폰트 크기 축소 */
     font-weight: bold;
     color: #0056b3; 
-    margin: 10px auto; /* 상하 마진 감소 */
-    padding: 8px 15px; /* 패딩 감소 */
+    margin: 5px auto; /* 상하 마진 최소화 */
+    padding: 5px 10px; /* 패딩 최소화 */
     border: 3px solid #0056b3;
     border-radius: 8px;
     display: inline-block; 
@@ -127,47 +127,50 @@ h1 {
 
 
 /* ------------------------------------------- */
-/* 💡 [MODIFIED] 퀴즈 화면 요소 간격 조정 */
+/* 💡 [CRUCIAL] 퀴즈 화면 요소 간격 조정 */
 /* ------------------------------------------- */
 
-/* 영역 그룹 */
-.subject-group {
-    margin-bottom: 15px; /* 마진 감소 */
-    padding: 10px; 
-    border: 1px solid #e0e0e0;
-    border-radius: 4px;
-    background-color: #ffffff;
+/* 문제 영역 */
+#problem-area {
+    margin-bottom: 5px; 
+    padding: 0 5px; 
+}
+
+#problem-image {
+    max-width: 95%; 
+    height: auto;
+    margin-bottom: 5px; /* 마진 최소화 */
 }
 
 /* 풀이 영역 컨테이너 */
 #solving-container {
     display: flex; 
     justify-content: center; 
-    gap: 10px; /* 풀이 영역 사이 간격 최소화 */
-    margin: 15px auto; /* 상하 마진 감소 */
+    gap: 5px; /* 풀이 영역 사이 간격 최소화 */
+    margin: 10px auto; /* 상하 마진 최소화 */
     max-width: 1150px; 
 }
 
 /* 각 플레이어의 풀이 영역 */
 .player-writing-area {
     flex: 1; 
-    min-width: 48%; /* 너비를 48%로 지정하여 10px 간격으로 100%에 가깝게 채움 */
+    min-width: 48%; 
     border: 1px solid #ced4da; 
     border-radius: 4px;
-    padding: 5px; /* 패딩 감소 */
+    padding: 5px; /* 패딩 최소화 */
     background-color: #f8f9fa; 
 }
 
 .player-writing-area h3 {
-    margin-top: 5px;
-    margin-bottom: 5px;
-    font-size: 1.1em;
+    margin-top: 2px; /* 마진 최소화 */
+    margin-bottom: 2px; /* 마진 최소화 */
+    font-size: 1em; /* 폰트 크기 축소 */
 }
 
-/* 캔버스 크기 */
+/* 💡 [CRUCIAL] 캔버스 높이 감소 */
 .writing-canvas {
     width: 100%; 
-    height: 400px; 
+    height: 280px; /* 400px -> 280px로 대폭 감소 */
     border: 1px solid #adb5bd; 
     background-color: #ffffff;
     cursor: crosshair;
@@ -176,59 +179,46 @@ h1 {
 
 /* 도구 버튼 배치 */
 .drawing-tools {
-    margin-top: 5px; /* 마진 감소 */
+    margin-top: 3px; 
     display: flex;
     flex-wrap: wrap; 
     justify-content: center;
-    gap: 3px; /* 도구 버튼 간격 최소화 */
+    gap: 2px; /* 도구 버튼 간격 최소화 */
 }
 
 /* 도구 버튼 스타일 */
 .tool-btn {
-    padding: 4px 8px; /* 패딩 감소 */
-    font-size: 0.8em; /* 폰트 크기 감소 */
+    padding: 3px 6px; /* 패딩 최소화 */
+    font-size: 0.75em; /* 폰트 크기 축소 */
 }
 
 /* 채점 버튼 영역 */
 .score-buttons {
-    margin-top: 5px; /* 마진 감소 */
-    display: flex;
-    justify-content: space-around;
+    margin-top: 3px; /* 마진 최소화 */
 }
 
 .grade-btn {
-    padding: 6px 12px; /* 패딩 감소 */
-    font-size: 0.9em; /* 폰트 크기 감소 */
+    padding: 5px 10px; /* 패딩 최소화 */
+    font-size: 0.85em;
 }
 
-/* 문제 이미지 및 제목 */
-#problem-area {
-    margin-bottom: 5px; /* 마진 감소 */
-}
+/* --- 나머지 스타일 유지 --- */
 
-#problem-image {
-    max-width: 95%; 
-    height: auto;
-    border: 1px solid #ccc; 
-    background-color: #fff;
+/* 영역 그룹 */
+.subject-group {
+    margin-bottom: 15px; 
+    padding: 10px; 
+    border: 1px solid #e0e0e0;
     border-radius: 4px;
-    margin-bottom: 10px; /* 마진 감소 */
-}
-
-#problem-area h2 {
-    font-size: 1.8em; /* 폰트 크기 감소 */
-    margin-bottom: 5px;
+    background-color: #ffffff;
 }
 
 /* 메인으로 돌아가기 버튼 */
 .main-control-btn {
-    margin-top: 15px; /* 마진 감소 */
+    margin-top: 10px; 
 }
 
-/* ------------------------------------------- */
 /* 채점 효과 오버레이 (유지) */
-/* ------------------------------------------- */
-
 #score-effect-overlay {
     position: fixed;
     top: 0;
