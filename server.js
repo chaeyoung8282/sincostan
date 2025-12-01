@@ -4,11 +4,11 @@ const WebSocket = require('ws');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
-const url = require('url'); // 💡 [추가] url 모듈 추가!
+const url = require('url'); // 💡 [FIX] url 모듈 추가!
 
 const PORT = process.env.PORT || 8080;
 
-// 💡 1. problems.json 파일에서 문제 데이터를 읽어옵니다.
+// 💡 1. problems.json 파일에서 문제 데이터를 읽어옵니다. (problems.json 파일이 프로젝트 루트에 존재한다고 가정)
 const problemsData = JSON.parse(fs.readFileSync(path.join(__dirname, 'problems.json'), 'utf8'));
 // 💡 2. 출제된 문제를 기록할 변수 (서버 재시작 시 초기화됩니다.)
 const solvedProblems = {}; 
@@ -16,10 +16,10 @@ const solvedProblems = {};
 // 1. HTTP 서버 설정 (파일 제공 및 API 처리 역할)
 const server = http.createServer((req, res) => {
     
-    // 💡 [FIXED] 쿼리 문자열을 분리합니다.
+    // 💡 [FIX] 요청 URL에서 쿼리 문자열을 제거한 순수 경로(pathname)를 추출합니다.
     const parsedUrl = url.parse(req.url); 
     let pathname = parsedUrl.pathname;
-    
+
     // 💡 퀴즈 요청 처리 API 경로 (/api/quiz/주제/난이도)
     if (pathname.startsWith('/api/quiz/')) {
         const parts = pathname.split('/'); 
