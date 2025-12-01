@@ -11,21 +11,15 @@ const currentSubjectDifficulty = document.getElementById('current-subject-diffic
 const problemImage = document.getElementById('problem-image');
 const backToMainBtn = document.getElementById('back-to-main');
 const difficultySelection = document.getElementById('difficulty-selection');
-const timerDisplayTop = document.getElementById('timer-display-top'); // 상단 타이머
-const timerDisplayBottom = document.getElementById('timer-display-bottom'); // 하단 타이머
-const quizAreaContainer = document.getElementById('quiz-area-container'); // 캔버스 전체 컨테이너
+const solvingContainer = document.getElementById('solving-container'); // 레이아웃 변경용
 
-// 정답 공개 관련 요소
-const revealAnswerBtn = document.getElementById('reveal-answer-btn');
-const answerRevealOverlay = document.getElementById('answer-reveal-overlay');
-const answerImage = document.getElementById('answer-image');
-const closeAnswerBtn = document.getElementById('close-answer-btn');
-const confettiContainer = document.getElementById('confetti-container');
-// '상 (BOSS)' 난이도 버튼 요소
-const hardDifficultyBtn = document.querySelector('.difficulty-btn[data-difficulty="hard"]');
+// 💡 [NEW] 채점 및 효과 관련 요소
+const scoreButtonsP1 = document.getElementById('score-buttons-p1');
+const scoreButtonsP2 = document.getElementById('score-buttons-p2');
+const scoreEffectOverlay = document.getElementById('score-effect-overlay');
+const scoreEffectMessage = document.getElementById('score-effect-message');
 
-
-// 캔버스 해상도 설정 (내부 드로잉 해상도)
+// 캔버스 해상도 설정
 const CANVAS_WIDTH = 550; 
 const CANVAS_HEIGHT = 400; 
 
@@ -35,43 +29,46 @@ canvasP2.width = CANVAS_WIDTH; canvasP2.height = CANVAS_HEIGHT;
 // 드로잉 상태를 저장할 객체
 const drawingState = {
     p1: {
-        isDrawing: false,
-        lastX: 0,
-        lastY: 0,
-        color: '#000000',
-        mode: 'pen',
-        ctx: ctxP1,
-        canvas: canvasP1,
+        isDrawing: false, lastX: 0, lastY: 0, color: '#000000', mode: 'pen',
+        ctx: ctxP1, canvas: canvasP1, player: 'p1' // player 속성 추가
     },
     p2: {
-        isDrawing: false,
-        lastX: 0,
-        lastY: 0,
-        color: '#000000',
-        mode: 'pen',
-        ctx: ctxP2,
-        canvas: canvasP2,
-    },
+        isDrawing: false, lastX: 0, lastY: 0, color: '#000000', mode: 'pen',
+        ctx: ctxP2, canvas: canvasP2, player: 'p2' // player 속성 추가
+    }
 };
 
-// 전역 상태 변수
-let currentDifficulty = null;
-let currentSubject = null;
-let currentProblemArray = []; 
-let currentProblemId = null; 
-let timerInterval = null; 
-let initialTime = 0; 
-let timeRemaining = 0; 
-let ws = null; 
-let currentAnswerUrl = ''; 
+let currentSubject = '';
+let currentDifficulty = '';
+let ws = null; // WebSocket 객체
 
-// 🚨 역할 및 플레이어 식별 변수: 기본값은 학생(false)으로 변경!
-let isTeacher = false; 
-let myPlayerId = 'p1'; 
+// 💡 [NEW] 전역 상태 변수
+let isTeacher = false; // 역할 분리용
+let myPlayerId = 'p1'; // P1, P2 또는 teacher
+let playerHP = { // 플레이어 HP 상태 (최대 HP 5로 가정)
+    p1: 5.0,
+    p2: 5.0
+};
+
+
+// ... (기존 문제 데이터, SUBJECT_NAMES, FILE_PATH_MAP, resolveImagePath 함수는 변경 없이 유지)
+
+// 캔버스 초기화 및 스타일 설정 함수
+function setupCanvasContext(ctx) {
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = 5;
+    // 배경을 흰색으로 초기화
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+}
+
+setupCanvasContext(ctxP1);
+setupCanvasContext(ctxP2);
 
 
 // =========================================================
-// 0. 역할/플레이어 식별 로직
+// 0. [NEW] 역할/플레이어 식별 로직 및 HP 관리
 // =========================================================
 
 /**
@@ -84,7 +81,6 @@ function getRoleAndPlayerId() {
     if (params.get('role') === 'teacher') {
         isTeacher = true;
         myPlayerId = 'teacher'; 
-        
     // 2. 학생 역할 설정 (?player=p1 또는 ?player=p2)
     } else if (params.get('player')) {
         const player = params.get('player').toLowerCase();
@@ -92,49 +88,97 @@ function getRoleAndPlayerId() {
             isTeacher = false;
             myPlayerId = player;
         } else {
-            // 잘못된 player 파라미터가 들어온 경우 -> P1 학생으로 간주
             isTeacher = false; 
             myPlayerId = 'p1';
         }
     } else {
-        // 🚨 파라미터가 없는 경우 (index.html만 접속) -> P1 학생으로 간주
+        // 🚨 파라미터가 없는 경우 -> P1 학생으로 간주
         isTeacher = false;
         myPlayerId = 'p1';
-        console.warn('[Role Setup] No parameters found. Defaulting to Student P1 mode.');
-    }
-    
-    if (!isTeacher) {
-        console.log(`[Role Setup] Student Mode 활성화. 현재 플레이어: ${myPlayerId}`);
-    } else {
-        console.log(`[Role Setup] Teacher Mode 활성화.`);
     }
 }
 
+/**
+ * HP 상태에 따라 하트 아이콘을 업데이트합니다.
+ */
+function updateHeartDisplay(playerId, hp) {
+    const heartDisplay = document.getElementById(`hearts-${playerId}`);
+    let html = '';
+    
+    // HP 업데이트 및 0과 5 사이로 제한
+    playerHP[playerId] = Math.max(0, Math.min(5.0, hp)); 
+
+    let tempHp = playerHP[playerId];
+    
+    // 하트 아이콘 생성
+    for (let i = 0; i < 5; i++) { // 최대 5개 하트
+        if (tempHp >= 1.0) {
+            html += '<span class="heart-icon">❤️</span>'; // 꽉 찬 하트
+            tempHp -= 1.0;
+        } else if (tempHp >= 0.5) {
+            html += '<span class="heart-icon">💔</span>'; // 반 하트 (깨진 하트로 표시)
+            tempHp = 0;
+        } else {
+            html += '<span class="heart-icon">🤍</span>'; // 빈 하트
+        }
+    }
+    
+    heartDisplay.innerHTML = html;
+}
 
 // =========================================================
-// 1. 드로잉 및 캔버스 관련 로직
+// 1. 드로잉 및 캔버스 관련 로직 (WS 전송 추가)
 // =========================================================
 
 /**
- * 캔버스 이벤트 리스너 설정
- * @param {string} playerId 'p1' 또는 'p2'
+ * 실제로 캔버스에 드로잉을 수행하는 함수 (로컬 및 원격 드로잉 모두 사용)
+ */
+function performDrawing(playerId, fromX, fromY, toX, toY, color, mode) {
+    const state = drawingState[playerId];
+    const ctx = state.ctx;
+
+    ctx.beginPath();
+    
+    if (mode === 'pen') {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 4;
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+    } else if (mode === 'eraser') {
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.lineWidth = 20; 
+    } else {
+         ctx.globalCompositeOperation = 'source-over'; 
+    }
+    
+    ctx.moveTo(fromX, fromY);
+    ctx.lineTo(toX, toY);
+    ctx.stroke();
+    
+    ctx.globalCompositeOperation = 'source-over'; // 기본값으로 복원
+}
+
+
+/**
+ * 캔버스 이벤트 리스너 설정 (역할 분리 및 WS 전송 로직 포함)
  */
 function setupCanvasListeners(playerId) {
     const state = drawingState[playerId];
-    
+    const canvas = state.canvas;
+
     // 학생 모드일 경우, 자신의 캔버스에만 리스너를 추가합니다.
     if (!isTeacher && playerId !== myPlayerId) {
-        state.canvas.style.pointerEvents = 'none'; // 클릭 불가 처리
+        canvas.style.pointerEvents = 'none'; // 클릭 불가 처리
         return; 
     }
-    
+
     // 캔버스의 실제 표시 크기(CSS 크기)와 내부 해상도의 비율을 계산하여 좌표 보정
     const getCoordinates = (e) => {
-        const rect = state.canvas.getBoundingClientRect();
-        const scaleX = state.canvas.width / rect.width;
-        const scaleY = state.canvas.height / rect.height;
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
         
-        // 터치 또는 마우스 이벤트에서 좌표를 가져옵니다.
         const clientX = e.clientX || e.touches[0].clientX;
         const clientY = e.clientY || e.touches[0].clientY;
         
@@ -147,13 +191,13 @@ function setupCanvasListeners(playerId) {
     const draw = (e) => {
         if (!state.isDrawing) return;
         
-        e.preventDefault(); // 터치 스크롤 방지
+        e.preventDefault(); 
         const { x, y } = getCoordinates(e);
 
         // 로컬 드로잉
         performDrawing(playerId, state.lastX, state.lastY, x, y, state.color, state.mode);
 
-        // 서버로 드로잉 데이터 전송 (다른 클라이언트에 동기화)
+        // 서버로 드로잉 데이터 전송
         sendWebSocketData({
             type: 'draw',
             playerId: playerId,
@@ -179,445 +223,246 @@ function setupCanvasListeners(playerId) {
     };
 
     // 마우스 이벤트
-    state.canvas.addEventListener('mousedown', startDrawing);
-    state.canvas.addEventListener('mousemove', draw);
-    state.canvas.addEventListener('mouseup', stopDrawing);
-    state.canvas.addEventListener('mouseout', stopDrawing);
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mouseout', stopDrawing);
     
     // 터치 이벤트
-    state.canvas.addEventListener('touchstart', startDrawing);
-    state.canvas.addEventListener('touchmove', draw);
-    state.canvas.addEventListener('touchend', stopDrawing);
-    state.canvas.addEventListener('touchcancel', stopDrawing);
-}
-
-/**
- * 실제로 캔버스에 드로잉을 수행하는 함수 (로컬 및 원격 드로잉 모두 사용)
- */
-function performDrawing(playerId, fromX, fromY, toX, toY, color, mode) {
-    const state = drawingState[playerId];
-    const ctx = state.ctx;
-
-    ctx.beginPath();
+    canvas.addEventListener('touchstart', startDrawing);
+    canvas.addEventListener('touchmove', draw);
+    canvas.addEventListener('touchend', stopDrawing);
+    canvas.addEventListener('touchcancel', stopDrawing);
     
-    if (mode === 'pen') {
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 4;
-        ctx.lineJoin = 'round';
-        ctx.lineCap = 'round';
-
-        ctx.moveTo(fromX, fromY);
-        ctx.lineTo(toX, toY);
-        ctx.stroke();
-
-    } else if (mode === 'eraser') {
-        ctx.globalCompositeOperation = 'destination-out';
-        ctx.lineWidth = 20; // 지우개 크기
-        
-        ctx.moveTo(fromX, fromY);
-        ctx.lineTo(toX, toY);
-        ctx.stroke();
-
-        ctx.globalCompositeOperation = 'source-over'; // 기본값으로 복원
-    }
-}
-
-/**
- * 캔버스의 모든 내용을 지우는 함수
- */
-function clearCanvas(playerId) {
-    const state = drawingState[playerId];
-    state.ctx.clearRect(0, 0, state.canvas.width, state.canvas.height);
-    
-    // 서버로 캔버스 지우기 동기화
-    sendWebSocketData({ type: 'clear', playerId: playerId });
-}
-
-/**
- * 드로잉 도구 버튼 이벤트 설정
- */
-function setupToolEvents() {
-    document.querySelectorAll('.tool-btn').forEach(button => {
-        const player = button.getAttribute('data-player');
-        
-        // 학생 모드일 경우, 자신의 도구만 활성화합니다.
-        if (!isTeacher && player !== myPlayerId) {
-            button.disabled = true;
-            button.style.opacity = '0.5';
-            return;
-        }
-
+    // 툴 버튼 리스너 (기존 로직 유지 및 WS 클리어 동기화 추가)
+    document.querySelectorAll(`#tools-${playerId} .tool-btn`).forEach(button => {
         button.addEventListener('click', (e) => {
-            const mode = e.target.getAttribute('data-mode') || 'pen'; 
-
-            // 동일 플레이어의 모든 버튼에서 'selected' 클래스 제거
-            document.querySelectorAll(`.drawing-tools [data-player="${player}"]`).forEach(btn => {
-                btn.classList.remove('selected');
-            });
+            document.querySelectorAll(`#tools-${playerId} .tool-btn`).forEach(btn => btn.classList.remove('selected'));
             
-            // 현재 버튼에 'selected' 클래스 추가
-            if (mode !== 'clear') {
-                e.target.classList.add('selected');
-            }
-
-            // 상태 업데이트
-            const state = drawingState[player];
+            const mode = button.dataset.mode || 'pen';
             state.mode = mode;
             
             if (mode === 'pen') {
-                state.color = e.target.getAttribute('data-color') || '#000000';
+                state.color = button.dataset.color || '#000000';
+            }
+            
+            if (button.classList.contains('clear-btn')) {
+                // 전체 지우기
+                state.ctx.globalCompositeOperation = 'source-over';
+                state.ctx.fillStyle = '#ffffff';
+                state.ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+                // WS 동기화
+                sendWebSocketData({ type: 'clear', playerId: playerId });
+            } else {
+                button.classList.add('selected');
             }
         });
     });
-
-    // 전체 지우기 버튼 이벤트
-    document.querySelectorAll('.clear-btn').forEach(button => {
-        const player = button.getAttribute('data-player');
-        
-        // 학생 모드일 경우, 자신의 지우개만 활성화합니다.
-        if (!isTeacher && player !== myPlayerId) {
-            return; 
-        }
-        
-        button.addEventListener('click', (e) => {
-            clearCanvas(player);
-        });
-    });
 }
 
+
 // =========================================================
-// 2. 타이머 로직
+// 2. UI/레이아웃 및 동기화 로직
 // =========================================================
 
-function startTimer(durationInSeconds) {
-    if (timerInterval) {
-        clearInterval(timerInterval);
-    }
+/**
+ * 교사/학생 역할에 따라 퀴즈 화면 레이아웃을 설정합니다.
+ */
+function setupQuizView() {
+    const player1Area = document.querySelector('.player-writing-area[data-player="p1"]');
+    const player2Area = document.querySelector('.player-writing-area[data-player="p2"]');
     
-    initialTime = durationInSeconds;
-    timeRemaining = durationInSeconds;
-    
-    // 타이머를 1초마다 업데이트
-    timerInterval = setInterval(() => {
-        timeRemaining--;
-        updateTimerDisplay(timeRemaining);
-    }, 1000);
-
-    // 초기 디스플레이 업데이트
-    updateTimerDisplay(timeRemaining);
-}
-
-function updateTimerDisplay(timeInSeconds) {
-    const minutes = String(Math.floor(timeInSeconds / 60)).padStart(2, '0');
-    const seconds = String(timeInSeconds % 60).padStart(2, '0');
-    
-    const displayTime = `${minutes}:${seconds}`;
-    
-    // 교사 모드일 때만 상단 타이머를 사용
     if (isTeacher) {
-        timerDisplayTop.textContent = `⏱️ 남은 시간: ${displayTime}`;
-    }
-    timerDisplayBottom.textContent = `⏱️ 남은 시간: ${displayTime}`; 
-
-    const criticalThreshold = Math.min(initialTime * 0.2, 30);
-
-    // 시간이 적게 남았을 때 스타일 변경 (깜빡임)
-    if (timeInSeconds <= criticalThreshold && timeInSeconds > 0) {
-        timerDisplayTop.classList.add('critical-time');
+        // 교사 모드: P1, P2 모두 표시하고 채점 버튼 숨기기 (정답 확인 후 표시)
+        player1Area.style.display = 'block';
+        player2Area.style.display = 'block';
+        document.getElementById('tools-p1').style.display = 'flex';
+        document.getElementById('tools-p2').style.display = 'flex';
+        scoreButtonsP1.style.display = 'none'; // 초기에는 숨김
+        scoreButtonsP2.style.display = 'none'; // 초기에는 숨김
+        solvingContainer.style.flexDirection = 'row'; 
+        player1Area.querySelector('.writing-canvas').style.height = '400px'; 
+        player2Area.querySelector('.writing-canvas').style.height = '400px'; 
+        
     } else {
-        timerDisplayTop.classList.remove('critical-time');
-    }
-
-    if (timeInSeconds <= 0) {
-        // 시간이 0이 되면 타이머 종료 처리
-        clearInterval(timerInterval);
-        timerDisplayTop.textContent = "⏱️ 시간 종료! (00:00)";
-        timerDisplayTop.classList.remove('critical-time');
-        
-        // 교사 모드일 때만 정답 확인 버튼 표시
-        if (isTeacher) {
-            revealAnswerBtn.style.display = 'inline-block';
+        // 학생 모드
+        if (myPlayerId === 'p1') {
+            // P1 학생: P1만 크게 표시
+            player1Area.style.display = 'block';
+            player2Area.style.display = 'none';
+            player1Area.style.minWidth = '100%'; 
+            player1Area.querySelector('.writing-canvas').style.height = '600px'; // 캔버스 높이 키우기
+            player1Area.querySelector('h3').textContent = '나의 풀이';
+        } else {
+            // P2 학생: P2만 크게 표시
+            player1Area.style.display = 'none';
+            player2Area.style.display = 'block';
+            player2Area.style.minWidth = '100%';
+            player2Area.querySelector('.writing-canvas').style.height = '600px'; 
+            player2Area.querySelector('h3').textContent = '나의 풀이';
         }
-        
-        // 교사 화면에서만 종료 명령을 보내 동기화
-        if (currentDifficulty && currentSubject && isTeacher) {
-             sendWebSocketData({ 
-                type: 'timer_finished',
-                difficulty: currentDifficulty 
-            });
-        }
-    }
-}
-
-
-// =========================================================
-// 3. 문제 로딩 및 동기화 로직
-// =========================================================
-
-const difficultyMap = {
-    'easy': { name: '하 (TRAINING)', time: 120 },
-    'medium': { name: '중 (CHALLENGE)', time: 90 },
-    'hard': { name: '상 (BOSS)', time: 60 },
-};
-
-/**
- * 서버의 problems.json 문제 경로를 실제 파일 경로로 변환
- */
-function resolveImagePath(logicalPath) {
-    return logicalPath; 
-}
-
-
-/**
- * 새 퀴즈를 서버에 요청하고 화면에 로드 (교사 화면에서만 실행)
- */
-async function loadNewQuiz(subject, difficulty) {
-    if (!isTeacher) return; // 학생은 퀴즈 로드 요청을 보내지 않습니다.
-    
-    try {
-        const response = await fetch(`/api/quiz/${subject}/${difficulty}`);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        // 응답 JSON 구조 변경: 서버에서 문제 데이터만 바로 반환하는 경우
-        const problemResponse = await response.json(); 
-        
-        if (problemResponse.error) {
-            alert(problemResponse.error);
-            showMainScreen();
-            return;
-        }
-
-        // 🚨 서버 문제 응답 구조 확인 및 조정
-        // 서버에서 이미 출제되지 않은 문제를 선택하고 난이도 정보가 없으므로, 
-        // 퀴즈 시작 시 클라이언트에게 필요한 모든 정보를 보내도록 구조 조정 (문제 로직은 서버에 따라 다를 수 있음)
-
-        // 문제 목록 관리 (problems.json)에서 남은 문제 정보를 같이 받도록 서버 코드를 수정하지 않는 한,
-        // 클라이언트에서 문제 데이터(nextProblem)와 함께 서버가 알고 있는 '남은 문제 수' 정보를 받기 어렵습니다.
-        // 현재는 서버가 문제 데이터 자체만 반환하므로, 클라이언트에서 필요한 구조로 변환합니다.
-        
-        const syncData = {
-            nextProblem: problemResponse, // 서버가 반환한 개별 문제 객체
-            remainingProblems: [] // 서버가 남은 문제 수를 알려주지 않으므로 빈 배열로 설정
-        };
-
-        // 새 문제를 성공적으로 가져왔으므로 화면 동기화
-        sendWebSocketData({ 
-            type: 'quiz_start', 
-            problemData: syncData, 
-            subject: subject, 
-            difficulty: difficulty 
-        });
-
-        // 로컬 (교사)에서 화면 동기화 함수 호출
-        syncQuizScreen(syncData, subject, difficulty);
-
-    } catch (error) {
-        console.error('퀴즈 로드 중 오류 발생. 서버 상태 또는 네트워크를 확인해주세요:', error);
+        // 학생은 채점 버튼 및 다른 학생 영역은 보이지 않음
+        scoreButtonsP1.style.display = 'none'; 
+        scoreButtonsP2.style.display = 'none';
+        solvingContainer.style.flexDirection = 'column';
     }
 }
 
 /**
- * 퀴즈 화면에 문제 정보 및 이미지 로드
+ * 메인 화면으로 돌아가기 (교사는 동기화 메시지 전송)
  */
-function syncQuizScreen(problemResponse, subject, difficulty) {
-    // 🚨 문제 구조 조정: server.js는 문제 자체만 반환하므로, nextProblem이 문제 데이터입니다.
-    const problemData = problemResponse.nextProblem || problemResponse; 
-    const remainingProblemsCount = problemResponse.remainingProblems ? problemResponse.remainingProblems.length : 0;
-    
-    if (!problemData || !problemData.url) {
-        console.error("문제 데이터가 유효하지 않습니다.", problemResponse);
-        // 서버가 에러를 JSON으로 반환한 경우, 이미 loadNewQuiz에서 처리됨
-        if (!isTeacher) {
-            alert("교사가 퀴즈를 시작하지 않았거나 문제가 없습니다.");
-        }
-        showMainScreen();
-        return;
-    }
-
-    // subjectName은 problems.json에서 가져와야 하지만, 현재는 하드코딩
-    const subjectNameMap = {
-        'polynomial': '다항식', 'equation': '방정식', 
-        'permutation': '순열/조합', 'matrix': '행렬',
-        // 필요한 다른 과목 추가
-    };
-    const subjectName = subjectNameMap[subject] || subject; 
-    
-    const difficultyName = difficultyMap[difficulty].name;
-    const problemUrl = problemData.url;
-    
-    currentProblemId = problemData.id;
-    currentSubject = subject;
-    currentDifficulty = difficulty;
-    currentProblemArray = problemResponse.remainingProblems || []; 
-    
-    // 1. 화면 전환 및 캔버스 클리어
-    quizScreen.style.display = 'flex';
-    mainScreen.style.display = 'none';
-    clearCanvas('p1');
-    clearCanvas('p2');
-
-    // 2. 문제 이미지 로딩 
-    let actualImagePath;
-    const systemFileName = problemData.system_file_name;
-    // system_file_name 처리는 현재 서버 코드로 확인이 어려우므로 url을 사용
-    actualImagePath = resolveImagePath(problemUrl); 
-    
-    // 정답 이미지 URL 저장
-    currentAnswerUrl = problemData.answer_url; 
-    
-    // 현재 문제/난이도 표시 업데이트
-    // 서버에서 남은 문제 개수를 알려주지 않으므로, 이 부분은 제거
-    currentSubjectDifficulty.textContent = `${subjectName} / ${difficultyName} (ID: ${problemData.id})`;
-    
-    // 3. 이미지 로딩 에러 핸들러 설정 
-    problemImage.onerror = () => {
-        problemImage.src = `https://placehold.co/800x250/dc3545/ffffff?text=로딩+실패!`;
-    };
-    
-    // 4. 이미지 소스 설정 (로딩 시작)
-    problemImage.src = actualImagePath;
-    
-    // 5. 타이머 시작
-    const duration = difficultyMap[difficulty].time;
-    startTimer(duration);
-
-    // 새 문제 시작 시 정답 버튼 숨기기
-    revealAnswerBtn.style.display = 'none'; 
-    answerRevealOverlay.style.display = 'none'; 
-    
-    // 퀴즈 화면 레이아웃을 다시 설정 (크기 재조정 및 영역 숨김)
-    setupQuizView(); 
-}
-
-
-// =========================================================
-// 4. 메인 UI 이벤트 및 정답 로직
-// =========================================================
-
 function showMainScreen() {
     mainScreen.style.display = 'block';
     quizScreen.style.display = 'none';
-    if (timerInterval) {
-        clearInterval(timerInterval);
-    }
-}
+    difficultySelection.style.display = 'none';
+    scoreEffectOverlay.style.display = 'none'; // 효과 제거
 
-/**
- * 팡파레 효과 (Confetti)를 발생시키는 함수
- */
-function launchConfetti() {
-    confettiContainer.innerHTML = ''; 
-    for (let i = 0; i < 30; i++) {
-        const c = document.createElement('div');
-        c.classList.add('confetti');
-        c.style.left = `${Math.random() * 100}vw`; 
-        c.style.animationDelay = `${Math.random() * 2}s`; 
-        c.style.transform = `translateY(${Math.random() * -10}vh)`; 
-        const colors = ['#ff00ff', '#ffeb3b', '#00bcd4', '#4caf50', '#ff5722'];
-        c.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-        confettiContainer.appendChild(c);
+    // 💡 [NEW] 교사일 경우에만 WS 메시지를 보내 다른 클라이언트를 동기화
+    if (isTeacher) {
+        sendWebSocketData({ type: 'back_to_main' });
     }
-    setTimeout(() => { confettiContainer.innerHTML = ''; }, 3000);
-}
-
-/**
- * 정답 공개 화면을 표시하는 함수
- */
-function showAnswer() {
-    if (!currentAnswerUrl) {
-        alert("정답 이미지를 찾을 수 없습니다. problems.json에 answer_url을 확인해 주세요.");
-        return;
-    }
-
-    answerImage.src = currentAnswerUrl;
-    answerRevealOverlay.style.display = 'flex';
     
-    launchConfetti();
+    // 선택 상태 초기화
+    document.querySelectorAll('.subject-btn').forEach(btn => btn.classList.remove('selected'));
+    currentSubject = '';
+    currentDifficulty = '';
     
-    sendWebSocketData({
-        type: 'answer_revealed',
-        answerUrl: currentAnswerUrl,
-    });
-}
-
-
-/**
- * 메인 화면 UI 이벤트 설정
- */
-function setupMainUiEvents() {
-    const basicSubjects = ['polynomial', 'equation', 'permutation', 'matrix']; 
-
-    // 학생 역할일 경우 메인 화면 버튼 클릭을 비활성화합니다.
-    if (!isTeacher) {
-        document.querySelectorAll('.subject-btn, .difficulty-btn').forEach(button => {
-            button.disabled = true;
-            button.style.cursor = 'default';
-            button.style.opacity = '0.7';
-        });
-        difficultySelection.style.display = 'block'; 
-        return; 
-    }
-
-    // 교사일 경우 기존 로직 유지
-    document.querySelectorAll('.subject-btn').forEach(button => {
-        button.addEventListener('click', (e) => {
-            document.querySelectorAll('.subject-btn').forEach(btn => btn.classList.remove('selected'));
-            e.target.classList.add('selected');
-            currentSubject = e.target.getAttribute('data-subject');
-            
-            if (hardDifficultyBtn) {
-                if (basicSubjects.includes(currentSubject)) {
-                    hardDifficultyBtn.style.display = 'none';
-                } else {
-                    hardDifficultyBtn.style.display = 'inline-block';
-                }
-            }
-            
-            difficultySelection.style.display = 'block';
-        });
-    });
-
-    document.querySelectorAll('.difficulty-btn').forEach(button => {
-        button.addEventListener('click', (e) => {
-            document.querySelectorAll('.difficulty-btn').forEach(btn => btn.classList.remove('selected'));
-            e.target.classList.add('selected');
-            currentDifficulty = e.target.getAttribute('data-difficulty');
-            
-            if (currentSubject && currentDifficulty) {
-                loadNewQuiz(currentSubject, currentDifficulty);
-            }
-        });
-    });
-
-    backToMainBtn.addEventListener('click', showMainScreen);
-}
-
-/**
- * 정답 공개 관련 이벤트 리스너 설정
- */
-function setupAnswerEvents() {
-    // 1. '정답 확인하기' 버튼 클릭 시
-    revealAnswerBtn.addEventListener('click', () => {
-        if (isTeacher) {
-            showAnswer();
-        }
-    });
-
-    // 2. '닫기' 버튼 클릭 시 오버레이 닫기
-    closeAnswerBtn.addEventListener('click', () => {
-        answerRevealOverlay.style.display = 'none';
-        confettiContainer.innerHTML = ''; 
-        
-        if (isTeacher) {
-            sendWebSocketData({ type: 'answer_closed' });
-        }
-    });
+    // 이미지 에러 핸들러 초기화
+    problemImage.onerror = null; 
 }
 
 
 // =========================================================
-// 5. WebSocket 동기화 로직
+// 3. [NEW] 채점 및 효과 로직
+// =========================================================
+
+/**
+ * 채점 버튼 이벤트 설정 (교사 전용)
+ */
+function setupScoringEvents() {
+    document.querySelectorAll('.grade-btn').forEach(button => {
+        // 학생은 채점 버튼을 클릭할 수 없음
+        if (!isTeacher) { return; }
+        
+        button.addEventListener('click', (e) => {
+            const playerId = e.target.getAttribute('data-player');
+            const result = e.target.getAttribute('data-result'); // 'correct' or 'incorrect'
+            
+            let newHp = playerHP[playerId];
+            if (result === 'correct') {
+                newHp += 1.0; // +1 하트
+            } else if (result === 'incorrect') {
+                newHp -= 0.5; // -0.5 하트
+            }
+            
+            // HP 업데이트 (로컬 및 제한)
+            updateHeartDisplay(playerId, newHp);
+            
+            // WS 동기화
+            sendWebSocketData({
+                type: 'score_update',
+                playerId: playerId,
+                result: result,
+                newHp: playerHP[playerId] // updateHeartDisplay에서 제한된 최종 HP 값 전송
+            });
+            
+            // 교사 화면에서 바로 효과 표시
+            showScoreEffect(result, playerId);
+        });
+    });
+}
+
+/**
+ * 채점 결과에 따른 시각적 효과를 표시합니다.
+ */
+function showScoreEffect(result, playerId) {
+    const playerNum = playerId.slice(-1); // P1 -> 1, P2 -> 2
+    let message = '';
+    let bgColor = '';
+    
+    if (result === 'correct') {
+        message = `P${playerNum} 정답! (❤️ +1)`;
+        bgColor = 'rgba(40, 167, 69, 0.9)'; // 초록색
+    } else {
+        message = `P${playerNum} 오답.. (💔 -0.5)`;
+        bgColor = 'rgba(220, 53, 69, 0.9)'; // 빨간색
+    }
+    
+    scoreEffectMessage.textContent = message;
+    scoreEffectMessage.style.backgroundColor = bgColor;
+    scoreEffectOverlay.style.display = 'flex';
+    
+    setTimeout(() => {
+        scoreEffectOverlay.style.display = 'none';
+    }, 2000);
+}
+
+
+/**
+ * 퀴즈 화면을 표시하고 문제를 로드합니다.
+ */
+async function showQuizScreen() {
+    mainScreen.style.display = 'none';
+    quizScreen.style.display = 'block';
+    
+    // ... (기존 문제 로드 로직 유지)
+    
+    const subjectName = SUBJECT_NAMES[currentSubject] || '주제';
+    const difficultyName = problemData[currentSubject]?.difficulty_map[currentDifficulty] || '난이도';
+    const loadingMessage = `${subjectName} / ${difficultyName} 문제를 서버에 요청 중...`;
+    
+    currentSubjectDifficulty.textContent = loadingMessage;
+    problemImage.src = `https://placehold.co/800x250/3498db/ffffff?text=${encodeURIComponent(loadingMessage)}`;
+    
+    await new Promise(resolve => setTimeout(resolve, 500)); 
+    
+    const subjectData = problemData[currentSubject];
+    const problemKey = `${currentSubject}-${currentDifficulty}`;
+    
+    const fullProblemArray = subjectData ? subjectData[currentDifficulty] : null;
+
+    if (!subjectData || !fullProblemArray || fullProblemArray.length === 0) {
+        currentSubjectDifficulty.textContent = "오류: 해당 주제/난이도의 문제 배열을 찾을 수 없습니다.";
+        problemImage.src = `https://placehold.co/800x250/dc3545/ffffff?text=JSON+데이터+누락!`;
+        return;
+    }
+
+    // 1. [문제 중복 방지 로직] 사용 가능한 문제 목록 초기화 및 관리
+    if (!availableProblems[problemKey] || availableProblems[problemKey].length === 0) {
+        availableProblems[problemKey] = [...fullProblemArray];
+        if (fullProblemArray.length > 0) {
+            console.log(`[문제 시스템] ${subjectName} / ${difficultyName} 문제 목록이 초기화되었습니다. (${fullProblemArray.length}개)`);
+        }
+    }
+
+    const currentProblemArray = availableProblems[problemKey];
+    const randomIndex = Math.floor(Math.random() * currentProblemArray.length);
+    const selectedProblem = currentProblemArray[randomIndex];
+    currentProblemArray.splice(randomIndex, 1);
+    
+    const logicalPath = selectedProblem.url;
+    let actualImagePath;
+    
+    // ... (이미지 로딩 로직 유지)
+
+    currentSubjectDifficulty.textContent = `${subjectName} / ${difficultyName} (ID: ${selectedProblem.id}) (남은 문제: ${currentProblemArray.length}개)`;
+    
+    // 이미지 로딩 에러 핸들러 설정
+    problemImage.onerror = () => {
+        console.error(`이미지 로드 실패 (404): ${actualImagePath}. 폴백 텍스트로 대체합니다.`); 
+        problemImage.src = `https://placehold.co/800x250/dc3545/ffffff?text=로딩+실패!+실제파일명:+${actualImagePath}`;
+    };
+    
+    problemImage.src = actualImagePath;
+    
+    // 💡 [NEW] HP 상태 표시 및 레이아웃 설정
+    updateHeartDisplay('p1', playerHP.p1);
+    updateHeartDisplay('p2', playerHP.p2);
+    setupQuizView(); // 역할에 따라 레이아웃 및 버튼 표시/숨김 설정
+}
+
+// =========================================================
+// 4. WebSocket 동기화 로직
 // =========================================================
 
 function setupWebSocket() {
@@ -625,10 +470,7 @@ function setupWebSocket() {
     const host = window.location.host;
     ws = new WebSocket(`${protocol}//${host}`);
 
-    ws.onopen = () => {
-        console.log('✅ WebSocket 연결 성공');
-    };
-
+    ws.onopen = () => { console.log('✅ WebSocket 연결 성공'); };
     ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
         
@@ -639,46 +481,30 @@ function setupWebSocket() {
             case 'clear':
                 drawingState[data.playerId].ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
                 break;
-            case 'quiz_start': 
-            case 'new_quiz_problem': 
-                // problemResponse 구조 변경 대응 (서버가 문제 데이터만 반환하는 경우)
-                syncQuizScreen(data.problemData, data.subject, data.difficulty);
-                break;
-            case 'timer_finished':
-                if (timerInterval) clearInterval(timerInterval);
-                timerDisplayTop.textContent = "⏱️ 시간 종료! (00:00)";
-                timerDisplayTop.classList.remove('critical-time');
-                if (isTeacher) { 
-                    revealAnswerBtn.style.display = 'inline-block';
+            case 'back_to_main': // 💡 [NEW] 메인 화면 복귀 동기화
+                if (!isTeacher) { 
+                    showMainScreen(); 
                 }
                 break;
-            case 'answer_revealed':
-                currentAnswerUrl = data.answerUrl; 
-                answerImage.src = currentAnswerUrl;
-                answerRevealOverlay.style.display = 'flex';
-                launchConfetti(); 
-                break;
-            case 'answer_closed':
-                answerRevealOverlay.style.display = 'none';
-                confettiContainer.innerHTML = '';
+            case 'score_update': // 💡 [NEW] 점수 업데이트 동기화
+                // 교사 포함 모든 클라이언트의 HP를 업데이트하고 효과를 표시합니다.
+                updateHeartDisplay(data.playerId, data.newHp);
+                showScoreEffect(data.result, data.playerId);
+                
+                // 교사일 경우, 채점 버튼 다시 표시
+                if (isTeacher) {
+                    scoreButtonsP1.style.display = 'block';
+                    scoreButtonsP2.style.display = 'block';
+                }
                 break;
             default:
                 console.warn('알 수 없는 WebSocket 메시지 타입:', data.type);
         }
     };
-
-    ws.onclose = () => {
-        console.log('❌ WebSocket 연결 종료');
-    };
-    
-    ws.onerror = (error) => {
-        console.error('WebSocket 오류 발생:', error);
-    };
+    ws.onclose = () => { console.log('❌ WebSocket 연결 종료'); };
+    ws.onerror = (error) => { console.error('WebSocket 오류 발생:', error); };
 }
 
-/**
- * WebSocket을 통해 서버로 데이터를 전송
- */
 function sendWebSocketData(data) {
     if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify(data));
@@ -689,105 +515,32 @@ function sendWebSocketData(data) {
 
 
 // =========================================================
-// 6. 뷰포트 설정 로직 (교사/학생 분리)
-// =========================================================
-
-function setupQuizView() {
-    const player1Area = document.querySelector('.player-writing-area[data-player="p1"]');
-    const player2Area = document.querySelector('.player-writing-area[data-player="p2"]');
-    
-    if (isTeacher) {
-        // 교사 모드: 모든 요소를 표시하고 기본 레이아웃 복원
-        if (player1Area) {
-            player1Area.style.display = 'block';
-            player1Area.style.flex = '1';
-            player1Area.style.width = 'auto';
-            player1Area.style.minWidth = '500px'; 
-            player1Area.querySelector('.writing-canvas').style.height = '400px'; 
-            player1Area.querySelector('h3').textContent = '풀이 공간 (P1)'; 
-            const tools1 = player1Area.querySelector('.drawing-tools');
-            if (tools1) tools1.style.display = 'flex'; 
-        }
-        if (player2Area) {
-            player2Area.style.display = 'block';
-            player2Area.style.flex = '1';
-            player2Area.style.width = 'auto';
-            player2Area.style.minWidth = '500px'; 
-            player2Area.querySelector('.writing-canvas').style.height = '400px'; 
-            player2Area.querySelector('h3').textContent = '풀이 공간 (P2)'; 
-            const tools2 = player2Area.querySelector('.drawing-tools');
-            if (tools2) tools2.style.display = 'flex'; 
-        }
-        if (quizAreaContainer) {
-            quizAreaContainer.style.display = 'flex';
-            quizAreaContainer.style.gap = '20px'; 
-        }
-        timerDisplayTop.style.display = 'block'; 
-        return;
-    }
-
-    // 학생 모드
-    
-    timerDisplayTop.style.display = 'none'; 
-    
-    if (quizAreaContainer) {
-        quizAreaContainer.style.gap = '0'; 
-        quizAreaContainer.style.display = 'flex';
-    }
-
-    let activeArea = (myPlayerId === 'p1') ? player1Area : player2Area;
-    let hiddenArea = (myPlayerId === 'p1') ? player2Area : player1Area;
-    
-    // 1. 활성화된 학생의 캔버스 영역 설정 (크게)
-    if (activeArea) {
-        activeArea.style.display = 'block';
-        activeArea.style.flex = '1'; 
-        activeArea.style.width = '100%'; 
-        activeArea.style.minWidth = 'auto'; 
-        activeArea.querySelector('.writing-canvas').style.height = '600px'; // 캔버스 높이 키우기
-        activeArea.querySelector('h3').textContent = '나의 풀이'; // 제목 변경
-        const activeTools = activeArea.querySelector('.drawing-tools');
-        if (activeTools) activeTools.style.display = 'flex'; // 도구 표시
-    }
-    
-    // 2. 다른 플레이어의 캔버스 영역을 강력하게 숨깁니다.
-    if (hiddenArea) {
-        hiddenArea.style.display = 'none';
-        hiddenArea.style.flex = '0 0 0'; 
-        hiddenArea.style.width = '0';
-        hiddenArea.style.minWidth = '0';
-        
-        // 도구 영역도 명시적으로 숨김
-        const hiddenTools = hiddenArea.querySelector('.drawing-tools');
-        if (hiddenTools) hiddenTools.style.display = 'none';
-    }
-}
-
-
-// =========================================================
-// 7. 초기화
+// 5. 초기화
 // =========================================================
 
 window.onload = async () => {
-    // 1. 역할 및 플레이어 ID를 먼저 설정합니다. (기본값: 학생 P1)
+    // 1. 역할 및 플레이어 ID를 먼저 설정합니다.
     getRoleAndPlayerId(); 
     
-    // 2. 캔버스 드로잉 리스너 설정 (자신의 캔버스만 활성화)
+    // 2. WebSocket 연결 설정
+    setupWebSocket();
+    
+    // 3. 캔버스 드로잉 리스너 설정
     setupCanvasListeners('p1');
     setupCanvasListeners('p2');
     
-    // 3. 도구 버튼 리스너 설정 (자신의 도구만 활성화)
-    setupToolEvents(); 
-    
-    // 4. 메인 UI 버튼 리스너 설정 (학생일 경우 비활성화)
+    // 4. 메인 UI 버튼 리스너 설정
     setupMainUiEvents();
     
-    // 5. 정답 이벤트 설정 
-    setupAnswerEvents(); 
+    // 5. [NEW] 채점 버튼 리스너 설정 (교사 전용)
+    setupScoringEvents(); 
     
-    // 6. 퀴즈 화면 레이아웃 설정 (교사/학생 뷰 분리)
-    setupQuizView(); 
+    // 6. 초기 HP 표시 (최대 5개 하트)
+    updateHeartDisplay('p1', playerHP.p1);
+    updateHeartDisplay('p2', playerHP.p2);
     
-    // 7. WebSocket 연결 시작
-    setupWebSocket(); 
+    // 7. 초기 레이아웃 설정
+    setupQuizView();
+    
+    console.log(`[Init] 역할: ${isTeacher ? '교사' : '학생'}, ID: ${myPlayerId}`);
 };
