@@ -96,11 +96,16 @@ const HEART_FILES = {
 const MAX_HEART_SLOTS = 10; 
 
 
-// --- 타이머 관련 상수/변수 ---
-const QUIZ_TIME_SECONDS = 60; // 문제당 시간 (초)
+// --- 💡 [MODIFIED] 타이머 관련 상수/변수 ---
+const TIMER_DURATIONS = {
+    'easy': 120,    // 2분
+    'medium': 180,   // 3분
+    'hard': 300      // 5분
+};
+
 const ALERT_TIME_SECONDS = 10; // 긴급 깜빡임 시작 시간 (초)
 let quizTimer = null;
-let timeLeft = QUIZ_TIME_SECONDS;
+let timeLeft = 0; // 초기값 0으로 설정
 const quizTimerDisplay = document.getElementById('quiz-timer'); // HTML에서 추가된 요소
 
 let currentSubject = '';
@@ -467,8 +472,8 @@ async function loadNewQuiz() {
         // 2. 문제 정보 설정
         syncQuizScreen(problem);
         
-        // 💡 [NEW] 타이머 시작
-        startQuizTimer();
+        // 💡 [MODIFIED] 타이머 시작 (난이도 정보 전달)
+        startQuizTimer(currentDifficulty);
         
         // 3. 캔버스 초기화 
         setupCanvasContext(ctxP1);
@@ -534,39 +539,51 @@ function showQuizScreen() {
 }
 
 /**
- * 💡 [NEW] 타이머를 시작하고 1초마다 업데이트합니다.
+ * 💡 [MODIFIED] 타이머를 시작하고 1초마다 업데이트합니다.
+ * @param {string} difficulty 현재 선택된 난이도 ('easy', 'medium', 'hard')
  */
-function startQuizTimer() {
+function startQuizTimer(difficulty) {
     // 1. 기존 타이머 제거
     if (quizTimer) {
         clearInterval(quizTimer);
     }
     
-    // 2. 초기 상태 설정
-    timeLeft = QUIZ_TIME_SECONDS;
+    // 2. 초기 시간 설정 (난이도에 따라)
+    let initialDuration = TIMER_DURATIONS[difficulty] || 60; // 난이도 정보가 없으면 기본 60초
+    timeLeft = initialDuration;
+
+    // 3. 타이머 표시 포맷팅 함수
+    const formatTime = (seconds) => {
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        return `남은 시간: ${minutes}분 ${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}초`;
+    };
+    
+    // 4. 초기 상태 설정
     if (quizTimerDisplay) {
-        quizTimerDisplay.textContent = `남은 시간: ${timeLeft}초`;
+        quizTimerDisplay.textContent = formatTime(timeLeft);
         quizTimerDisplay.classList.remove('urgent'); // 초기화
     }
     
-    // 3. 타이머 시작
+    // 5. 타이머 시작
     quizTimer = setInterval(() => {
         timeLeft--;
         
         if (quizTimerDisplay) {
-             quizTimerDisplay.textContent = `남은 시간: ${timeLeft}초`;
+            quizTimerDisplay.textContent = formatTime(timeLeft);
         }
         
-        // 4. 긴급 깜빡임 효과 적용
+        // 6. 긴급 깜빡임 효과 적용
         if (timeLeft <= ALERT_TIME_SECONDS) {
             quizTimerDisplay.classList.add('urgent');
         }
         
-        // 5. 시간 종료 처리
+        // 7. 시간 종료 처리
         if (timeLeft <= 0) {
             clearInterval(quizTimer);
             if (quizTimerDisplay) {
-                 quizTimerDisplay.textContent = 'TIME OVER!';
+                quizTimerDisplay.textContent = 'TIME OVER!';
+                quizTimerDisplay.classList.remove('urgent'); // 혹시 남아있을 경우 제거
             }
             
             // TODO: (선택 사항) 시간이 초과되었을 때 정답/오답 처리를 강제로 진행하거나 HP를 차감하는 로직을 여기에 추가할 수 있습니다.
@@ -673,8 +690,8 @@ function setupWebSocket() {
                     syncQuizScreen(data.problem);
                     setupCanvasContext(ctxP1); 
                     setupCanvasContext(ctxP2); 
-                    // 💡 [NEW] 학생 클라이언트에서도 타이머 시작
-                    startQuizTimer(); 
+                    // 💡 [MODIFIED] 학생 클라이언트에서도 난이도 정보를 이용해 타이머 시작
+                    startQuizTimer(currentDifficulty); 
                 }
                 break;
             case 'score_update': 
