@@ -1,12 +1,5 @@
 {
   "polynomial": {
-    "medium": [
-      { "id": "p-m-1", "url": "/images/polynomial/medium_1.png" },
-      { "id": "p-m-2", "url": "/images/polynomial/medium_2.png" },
-      { "id": "p-m-3", "url": "/images/polynomial/medium_3.png" },
-      { "id": "p-m-4", "url": "/images/polynomial/medium_4.png" },
-      { "id": "p-m-5", "url": "/images/polynomial/medium_5.png" }
-    ],
     "easy": [
       { "id": "p-e-1", "url": "/images/polynomial/easy_1.png" },
       { "id": "p-e-2", "url": "/images/polynomial/easy_2.png" },
@@ -14,32 +7,222 @@
       { "id": "p-e-4", "url": "/images/polynomial/easy_4.png" },
       { "id": "p-e-5", "url": "/images/polynomial/easy_5.png" }
     ],
+    "medium": [
+      { "id": "p-m-1", "url": "/images/polynomial/medium_1.png" },
+      { "id": "p-m-2", "url": "/images/polynomial/medium_2.png" },
+      { "id": "p-m-3", "url": "/images/polynomial/medium_3.png" },
+      { "id": "p-m-4", "url": "/images/polynomial/medium_4.png" },
+      { "id": "p-m-5", "url": "/images/polynomial/medium_5.png" }
+    ],
     "difficulty_map": {
       "easy": "하 (TRAINING)",
       "medium": "중 (CHALLENGE)"
     }
   },
   "equation": {
-    "medium": [], "easy": [],
-    "difficulty_map": { "easy": "하 (TRAINING)", "medium": "중 (CHALLENGE)" }
+    "easy": [
+      { "id": "e-e-1", "url": "/images/equation/easy_1.png" },
+      { "id": "e-e-2", "url": "/images/equation/easy_2.png" },
+      { "id": "e-e-3", "url": "/images/equation/easy_3.png" },
+      { "id": "e-e-4", "url": "/images/equation/easy_4.png" },
+      { "id": "e-e-5", "url": "/images/equation/easy_5.png" },
+      { "id": "e-e-6", "url": "/images/equation/easy_6.png" },
+      { "id": "e-e-7", "url": "/images/equation/easy_7.png" },
+      { "id": "e-e-8", "url": "/images/equation/easy_8.png" },
+      { "id": "e-e-9", "url": "/images/equation/easy_9.png" },
+      { "id": "e-e-10", "url": "/images/equation/easy_10.png" },
+      { "id": "e-e-11", "url": "/images/equation/easy_11.png" },
+      { "id": "e-e-12", "url": "/images/equation/easy_12.png" },
+      { "id": "e-e-13", "url": "/images/equation/easy_13.png" },
+      { "id": "e-e-14", "url": "/images/equation/easy_14.png" },
+      { "id": "e-e-15", "url": "/images/equation/easy_15.png" }
+    ],
+    "medium": [
+      { "id": "e-m-1", "url": "/images/equation/medium_1.png" },
+      { "id": "e-m-2", "url": "/images/equation/medium_2.png" },
+      { "id": "e-m-3", "url": "/images/equation/medium_3.png" },
+      { "id": "e-m-4", "url": "/images/equation/medium_4.png" },
+      { "id": "e-m-5", "url": "/images/equation/medium_5.png" },
+      { "id": "e-m-6", "url": "/images/equation/medium_6.png" },
+      { "id": "e-m-7", "url": "/images/equation/medium_7.png" },
+      { "id": "e-m-8", "url": "/images/equation/medium_8.png" },
+      { "id": "e-m-9", "url": "/images/equation/medium_9.png" },
+      { "id": "e-m-10", "url": "/images/equation/medium_10.png" }
+    ],
+    "hard": [
+      { "id": "e-h-1", "url": "/images/equation/hard_1.png" },
+      { "id": "e-h-2", "url": "/images/equation/hard_2.png" },
+      { "id": "e-h-3", "url": "/images/equation/hard_3.png" },
+      { "id": "e-h-4", "url": "/images/equation/hard_4.png" },
+      { "id": "e-h-5", "url": "/images/equation/hard_5.png" },
+      { "id": "e-h-6", "url": "/images/equation/hard_6.png" },
+      { "id": "e-h-7", "url": "/images/equation/hard_7.png" }
+    ],
+    "difficulty_map": {
+      "easy": "하 (TRAINING)",
+      "medium": "중 (CHALLENGE)",
+      "hard": "상 (BOSS)"
+    }
   },
   "permutation": {
-    "medium": [], "easy": [],
-    "difficulty_map": { "easy": "하 (TRAINING)", "medium": "중 (CHALLENGE)" }
+    "easy": [
+      { "id": "perm-e-1", "url": "/images/permutation/easy_1.png" },
+      { "id": "perm-e-2", "url": "/images/permutation/easy_2.png" },
+      { "id": "perm-e-3", "url": "/images/permutation/easy_3.png" },
+      { "id": "perm-e-4", "url": "/images/permutation/easy_4.png" },
+      { "id": "perm-e-5", "url": "/images/permutation/easy_5.png" }
+    ],
+    "medium": [
+      { "id": "perm-m-1", "url": "/images/permutation/medium_1.png" },
+      { "id": "perm-m-2", "url": "/images/permutation/medium_2.png" },
+      { "id": "perm-m-3", "url": "/images/permutation/medium_3.png" },
+      { "id": "perm-m-4", "url": "/images/permutation/medium_4.png" },
+      { "id": "perm-m-5", "url": "/images/permutation/medium_5.png" },
+      { "id": "perm-m-6", "url": "/images/permutation/medium_6.png" },
+      { "id": "perm-m-7", "url": "/images/permutation/medium_7.png" }
+    ],
+    "difficulty_map": {
+      "easy": "하 (TRAINING)",
+      "medium": "중 (CHALLENGE)"
+    }
   },
   "matrix": {
-    "medium": [], "easy": [],
-    "difficulty_map": { "easy": "하 (TRAINING)", "medium": "중 (CHALLENGE)" }
+    "easy": [
+      { "id": "m-e-1", "url": "/images/matrix/easy_1.png" },
+      { "id": "m-e-2", "url": "/images/matrix/easy_2.png" },
+      { "id": "m-e-3", "url": "/images/matrix/easy_3.png" },
+      { "id": "m-e-4", "url": "/images/matrix/easy_4.png" },
+      { "id": "m-e-5", "url": "/images/matrix/easy_5.png" }
+    ],
+    "medium": [
+      { "id": "m-m-1", "url": "/images/matrix/medium_1.png" },
+      { "id": "m-m-2", "url": "/images/matrix/medium_2.png" },
+      { "id": "m-m-3", "url": "/images/matrix/medium_3.png" },
+      { "id": "m-m-4", "url": "/images/matrix/medium_4.png" },
+      { "id": "m-m-5", "url": "/images/matrix/medium_5.png" },
+      { "id": "m-m-6", "url": "/images/matrix/medium_6.png" },
+      { "id": "m-m-7", "url": "/images/matrix/medium_7.png" },
+      { "id": "m-m-8", "url": "/images/matrix/medium_8.png" },
+      { "id": "m-m-9", "url": "/images/matrix/medium_9.png" }
+    ],
+    "difficulty_map": {
+      "easy": "하 (TRAINING)",
+      "medium": "중 (CHALLENGE)"
+    }
   },
   "geometry": {
-    "hard": [], "medium": [], "easy": [],
-    "difficulty_map": { "easy": "하 (TRAINING)", "medium": "중 (CHALLENGE)", "hard": "상 (BOSS)" }
+    "easy": [
+      { "id": "g-e-1", "url": "/images/geometry/easy_1.png" },
+      { "id": "g-e-2", "url": "/images/geometry/easy_2.png" },
+      { "id": "g-e-3", "url": "/images/geometry/easy_3.png" },
+      { "id": "g-e-4", "url": "/images/geometry/easy_4.png" },
+      { "id": "g-e-5", "url": "/images/geometry/easy_5.png" },
+      { "id": "g-e-6", "url": "/images/geometry/easy_6.png" },
+      { "id": "g-e-7", "url": "/images/geometry/easy_7.png" },
+      { "id": "g-e-8", "url": "/images/geometry/easy_8.png" },
+      { "id": "g-e-9", "url": "/images/geometry/easy_9.png" },
+      { "id": "g-e-10", "url": "/images/geometry/easy_10.png" },
+      { "id": "g-e-11", "url": "/images/geometry/easy_11.png" },
+      { "id": "g-e-12", "url": "/images/geometry/easy_12.png" },
+      { "id": "g-e-13", "url": "/images/geometry/easy_13.png" },
+      { "id": "g-e-14", "url": "/images/geometry/easy_14.png" },
+      { "id": "g-e-15", "url": "/images/geometry/easy_15.png" },
+      { "id": "g-e-16", "url": "/images/geometry/easy_16.png" },
+      { "id": "g-e-17", "url": "/images/geometry/easy_17.png" }
+    ],
+    "medium": [
+      { "id": "g-m-1", "url": "/images/geometry/medium_1.png" },
+      { "id": "g-m-2", "url": "/images/geometry/medium_2.png" },
+      { "id": "g-m-3", "url": "/images/geometry/medium_3.png" },
+      { "id": "g-m-4", "url": "/images/geometry/medium_4.png" },
+      { "id": "g-m-5", "url": "/images/geometry/medium_5.png" },
+      { "id": "g-m-6", "url": "/images/geometry/medium_6.png" },
+      { "id": "g-m-7", "url": "/images/geometry/medium_7.png" },
+      { "id": "g-m-8", "url": "/images/geometry/medium_8.png" },
+      { "id": "g-m-9", "url": "/images/geometry/medium_9.png" },
+      { "id": "g-m-10", "url": "/images/geometry/medium_10.png" },
+      { "id": "g-m-11", "url": "/images/geometry/medium_11.png" },
+      { "id": "g-m-12", "url": "/images/geometry/medium_12.png" },
+      { "id": "g-m-13", "url": "/images/geometry/medium_13.png" },
+      { "id": "g-m-14", "url": "/images/geometry/medium_14.png" },
+      { "id": "g-m-15", "url": "/images/geometry/medium_15.png" }
+    ],
+    "hard": [
+      { "id": "g-h-1", "url": "/images/geometry/hard_1.png" },
+      { "id": "g-h-2", "url": "/images/geometry/hard_2.png" },
+      { "id": "g-h-3", "url": "/images/geometry/hard_3.png" },
+      { "id": "g-h-4", "url": "/images/geometry/hard_4.png" },
+      { "id": "g-h-5", "url": "/images/geometry/hard_5.png" },
+      { "id": "g-h-6", "url": "/images/geometry/hard_6.png" },
+      { "id": "g-h-7", "url": "/images/geometry/hard_7.png" },
+      { "id": "g-h-8", "url": "/images/geometry/hard_8.png" },
+      { "id": "g-h-9", "url": "/images/geometry/hard_9.png" },
+      { "id": "g-h-10", "url": "/images/geometry/hard_10.png" }
+    ],
+    "difficulty_map": {
+      "easy": "하 (TRAINING)",
+      "medium": "중 (CHALLENGE)",
+      "hard": "상 (BOSS)"
+    }
   },
   "set": {
-    "hard": [], "medium": [], "easy": [],
-    "difficulty_map": { "easy": "하 (TRAINING)", "medium": "중 (CHALLENGE)", "hard": "상 (BOSS)" }
+    "easy": [
+      { "id": "s-e-1", "url": "/images/set/easy_1.png" },
+      { "id": "s-e-2", "url": "/images/set/easy_2.png" },
+      { "id": "s-e-3", "url": "/images/set/easy_3.png" },
+      { "id": "s-e-4", "url": "/images/set/easy_4.png" },
+      { "id": "s-e-5", "url": "/images/set/easy_5.png" },
+      { "id": "s-e-6", "url": "/images/set/easy_6.png" },
+      { "id": "s-e-7", "url": "/images/set/easy_7.png" },
+      { "id": "s-e-8", "url": "/images/set/easy_8.png" },
+      { "id": "s-e-9", "url": "/images/set/easy_9.png" },
+      { "id": "s-e-10", "url": "/images/set/easy_10.png" },
+      { "id": "s-e-11", "url": "/images/set/easy_11.png" },
+      { "id": "s-e-12", "url": "/images/set/easy_12.png" },
+      { "id": "s-e-13", "url": "/images/set/easy_13.png" },
+      { "id": "s-e-14", "url": "/images/set/easy_14.png" }
+    ],
+    "medium": [
+      { "id": "s-m-1", "url": "/images/set/medium_1.png" },
+      { "id": "s-m-2", "url": "/images/set/medium_2.png" },
+      { "id": "s-m-3", "url": "/images/set/medium_3.png" },
+      { "id": "s-m-4", "url": "/images/set/medium_4.png" },
+      { "id": "s-m-5", "url": "/images/set/medium_5.png" },
+      { "id": "s-m-6", "url": "/images/set/medium_6.png" },
+      { "id": "s-m-7", "url": "/images/set/medium_7.png" },
+      { "id": "s-m-8", "url": "/images/set/medium_8.png" },
+      { "id": "s-m-9", "url": "/images/set/medium_9.png" },
+      { "id": "s-m-10", "url": "/images/set/medium_10.png" },
+      { "id": "s-m-11", "url": "/images/set/medium_11.png" },
+      { "id": "s-m-12", "url": "/images/set/medium_12.png" },
+      { "id": "s-m-13", "url": "/images/set/medium_13.png" },
+      { "id": "s-m-14", "url": "/images/set/medium_14.png" }
+    ],
+    "hard": [
+      { "id": "s-h-1", "url": "/images/set/hard_1.png" },
+      { "id": "s-h-2", "url": "/images/set/hard_2.png" },
+      { "id": "s-h-3", "url": "/images/set/hard_3.png" },
+      { "id": "s-h-4", "url": "/images/set/hard_4.png" },
+      { "id": "s-h-5", "url": "/images/set/hard_5.png" },
+      { "id": "s-h-6", "url": "/images/set/hard_6.png" },
+      { "id": "s-h-7", "url": "/images/set/hard_7.png" }
+    ],
+    "difficulty_map": {
+      "easy": "하 (TRAINING)",
+      "medium": "중 (CHALLENGE)",
+      "hard": "상 (BOSS)"
+    }
   },
-  "function": {
+  "nonsense": {
+    "quizzes": [
+      { "id": "n-1", "url": "/images/nonsense/quiz_1.png" },
+      { "id": "n-2", "url": "/images/nonsense/quiz_2.png" },
+      { "id": "n-3", "url": "/images/nonsense/quiz_3.png" },
+      { "id": "n-4", "url": "/images/nonsense/quiz_4.png" },
+      { "id": "n-5", "url": "/images/nonsense/quiz_5.png" }
+    ]
+  }
+    "function": {
     "hard": [], "medium": [], "easy": [],
     "difficulty_map": { "easy": "하 (TRAINING)", "medium": "중 (CHALLENGE)", "hard": "상 (BOSS)" }
   }
