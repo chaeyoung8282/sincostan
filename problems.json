@@ -222,8 +222,4 @@
       { "id": "n-5", "url": "/images/nonsense/quiz_5.png" }
     ]
   }
-    "function": {
-    "hard": [], "medium": [], "easy": [],
-    "difficulty_map": { "easy": "하 (TRAINING)", "medium": "중 (CHALLENGE)", "hard": "상 (BOSS)" }
-  }
 }
