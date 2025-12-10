@@ -215,11 +215,11 @@
   },
   "nonsense": {
     "quizzes": [
-      { "id": "n-1", "url": "/images/nonsense/quiz_1.png" },
-      { "id": "n-2", "url": "/images/nonsense/quiz_2.png" },
-      { "id": "n-3", "url": "/images/nonsense/quiz_3.png" },
-      { "id": "n-4", "url": "/images/nonsense/quiz_4.png" },
-      { "id": "n-5", "url": "/images/nonsense/quiz_5.png" }
+      { "id": "n-1", "url": "/images/nonsense/problem_1.png" },
+      { "id": "n-2", "url": "/images/nonsense/problem_2.png" },
+      { "id": "n-3", "url": "/images/nonsense/problem_3.png" },
+      { "id": "n-4", "url": "/images/nonsense/problem_4.png" },
+      { "id": "n-5", "url": "/images/nonsense/problem_5.png" }
     ]
   }
 }
