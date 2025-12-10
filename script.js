@@ -67,7 +67,7 @@ const SUBJECT_NAMES = {
     geometry: "도형의 방정식",
     set: "집합과 명제",
     function: "함수와 그래프",
-    nonsense: "넌센스 퀴즈" // 💡 [NEW] 넌센스 추가
+    nonsense: "넌센스 퀴즈" // 💡 넌센스 추가
 };
 
 // 공통수학 1 (BASIC STAGE)에 해당하는 주제 목록
@@ -103,7 +103,7 @@ const MAX_HEART_SLOTS = 10;
 
 // --- 타이머 관련 상수/변수 ---
 const TIMER_DURATIONS = {
-    'easy': 120,    // 2분
+    'easy': 120,   // 2분
     'medium': 180,   // 3분
     'hard': 300      // 5분
 };
@@ -127,7 +127,7 @@ let isTeacher = false;
 let myPlayerId = 'p1'; 
 
 // =========================================================
-// 0. 역할/플레이어 식별 로직 및 HP 관리 (생략, 이전과 동일)
+// 0. 역할/플레이어 식별 로직 및 HP 관리
 // =========================================================
 function getRoleAndPlayerId() {
     const params = new URLSearchParams(window.location.search);
@@ -176,7 +176,7 @@ function setupCharacterUI() {
 
 
 // =========================================================
-// 1. 드로잉 및 캔버스 관련 로직 (생략, 이전과 동일)
+// 1. 드로잉 및 캔버스 관련 로직
 // =========================================================
 
 function performDrawing(playerId, fromX, fromY, toX, toY, color, mode) {
@@ -195,7 +195,7 @@ function performDrawing(playerId, fromX, fromY, toX, toY, color, mode) {
         ctx.globalCompositeOperation = 'destination-out';
         ctx.lineWidth = 20; 
     } else {
-         ctx.globalCompositeOperation = 'source-over'; 
+        ctx.globalCompositeOperation = 'source-over'; 
     }
     
     ctx.moveTo(fromX, fromY);
@@ -215,8 +215,6 @@ function setupCanvasListeners(playerId) {
         return; 
     }
     
-    // ... (캔버스 좌표 및 드로잉 로직 생략, 이전과 동일)
-
     const getCoordinates = (e) => {
         const rect = canvas.getBoundingClientRect();
         const scaleX = canvas.width / rect.width;
@@ -271,7 +269,7 @@ function setupCanvasListeners(playerId) {
     canvas.addEventListener('touchend', stopDrawing);
     canvas.addEventListener('touchcancel', stopDrawing);
     
-    // 툴 버튼 리스너 (생략, 이전과 동일)
+    // 툴 버튼 리스너
     document.querySelectorAll(`#tools-${playerId} .tool-btn`).forEach(button => {
         button.addEventListener('click', (e) => {
             document.querySelectorAll(`#tools-${playerId} .tool-btn`).forEach(btn => btn.classList.remove('selected'));
@@ -307,28 +305,31 @@ function setupQuizView() {
     const player1Area = document.querySelector('.player-writing-area[data-player="p1"]');
     const player2Area = document.querySelector('.player-writing-area[data-player="p2"]');
     
-    const isNonsenseMode = currentSubject === NONSENSE_SUBJECT; // 💡 [NEW] 넌센스 모드 확인
+    const isNonsenseMode = currentSubject === NONSENSE_SUBJECT; // 💡 넌센스 모드 확인
+    
+    let p1CanvasHeightCss = '280px';
+    let p2CanvasHeightCss = '280px';
     
     if (isTeacher) {
         // 교사 모드: P1, P2 모두 표시 (넌센스 모드에서는 P2 숨김)
         player1Area.style.display = 'block';
-        player2Area.style.display = isNonsenseMode ? 'none' : 'block'; // 💡 [MODIFIED] 넌센스일 경우 P2 숨김
+        player2Area.style.display = isNonsenseMode ? 'none' : 'block'; // 💡 넌센스일 경우 P2 숨김
         
         document.getElementById('tools-p1').style.display = 'flex';
         document.getElementById('tools-p2').style.display = isNonsenseMode ? 'none' : 'flex'; 
         
         scoreButtonsP1.style.display = 'block'; 
-        scoreButtonsP2.style.display = isNonsenseMode ? 'none' : 'block'; // 💡 [MODIFIED] 넌센스일 경우 P2 채점 버튼 숨김
+        scoreButtonsP2.style.display = isNonsenseMode ? 'none' : 'block'; // 💡 넌센스일 경우 P2 채점 버튼 숨김
         
         solvingContainer.style.flexDirection = 'row'; 
         
-        // 캔버스 크기 조정
-        const canvasHeight = isNonsenseMode ? '400px' : '280px'; // 💡 [NEW] 넌센스일 경우 P1 영역을 더 크게
-        player1Area.querySelector('.writing-canvas').style.height = canvasHeight; 
-        player2Area.querySelector('.writing-canvas').style.height = '280px'; 
+        // 캔버스 높이 조정 (넌센스일 경우 P1 영역을 더 크게)
+        if (isNonsenseMode) {
+            p1CanvasHeightCss = '400px';
+        }
         
     } else {
-        // 학생 모드: 자신의 영역만 크게 표시 (넌센스 모드에서는 무조건 P1 영역만 표시)
+        // 학생 모드: 자신의 영역만 크게 표시
         const playerConfig = myPlayerId === 'p1' ? CHARACTER_CONFIG.P1 : CHARACTER_CONFIG.P2;
 
         if (myPlayerId === 'p1') {
@@ -336,10 +337,9 @@ function setupQuizView() {
             player2Area.style.display = 'none';
             player1Area.style.minWidth = '100%'; 
             
-            // 캔버스 높이 설정 (학생 모드는 항상 크게)
-            const canvasHeight = isNonsenseMode ? '600px' : '600px'; 
-            player1Area.querySelector('.writing-canvas').style.height = canvasHeight; 
-            player1Area.querySelector('h3').textContent = `${playerConfig.name}님의 풀이`; 
+            p1CanvasHeightCss = isNonsenseMode ? '600px' : '600px'; // 학생 모드는 항상 크게
+            player1Area.querySelector('h3').textContent = `${playerConfig.name}님의 풀이`;
+            
         } else {
             // P2 학생이고 넌센스 모드라면, 풀이 영역이 필요 없으므로 숨김
             if (isNonsenseMode) {
@@ -349,14 +349,22 @@ function setupQuizView() {
                  player1Area.style.display = 'none';
                  player2Area.style.display = 'block';
                  player2Area.style.minWidth = '100%';
-                 player2Area.querySelector('.writing-canvas').style.height = '600px'; 
-                 player2Area.querySelector('h3').textContent = `${playerConfig.name}님의 풀이`; 
+                 p2CanvasHeightCss = '600px'; // P2 학생 모드는 항상 크게
+                 player2Area.querySelector('h3').textContent = `${playerConfig.name}님의 풀이`;
             }
         }
         scoreButtonsP1.style.display = 'none'; 
         scoreButtonsP2.style.display = 'none';
         solvingContainer.style.flexDirection = 'column';
     }
+    
+    // CSS 높이 적용
+    player1Area.querySelector('.writing-canvas').style.height = p1CanvasHeightCss;
+    player2Area.querySelector('.writing-canvas').style.height = p2CanvasHeightCss;
+
+    // 캔버스 자체 해상도 초기화
+    canvasP1.width = CANVAS_WIDTH; canvasP1.height = CANVAS_HEIGHT;
+    canvasP2.width = CANVAS_WIDTH; canvasP2.height = CANVAS_HEIGHT;
 }
 
 /**
@@ -366,7 +374,7 @@ function showMainScreen() {
     mainScreen.style.display = 'block';
     quizScreen.style.display = 'none';
     difficultySelection.style.display = 'none';
-    nonsenseSelection.style.display = 'none'; // 💡 [NEW] 넌센스 선택 UI 숨김
+    nonsenseSelection.style.display = 'none'; // 💡 넌센스 선택 UI 숨김
     scoreEffectOverlay.style.display = 'none';
 
     if (quizTimer) {
@@ -382,7 +390,7 @@ function showMainScreen() {
     document.querySelectorAll('.subject-btn').forEach(btn => btn.classList.remove('selected'));
     currentSubject = '';
     currentDifficulty = '';
-    currentQuizNumber = null; // 💡 [NEW] 퀴즈 번호 초기화
+    currentQuizNumber = null; // 💡 퀴즈 번호 초기화
     
     problemImage.onerror = null; 
 }
@@ -411,13 +419,15 @@ function setupMainUiEvents() {
             nonsenseSelection.style.display = 'none';
             
             if (currentSubject === NONSENSE_SUBJECT) {
-                // 💡 [NEW] 넌센스 선택 시 난이도 건너뛰고 문제 번호 선택 UI 표시
+                // 💡 넌센스 선택 시 난이도 건너뛰고 문제 번호 선택 UI 표시
                 nonsenseSelection.style.display = 'block';
                 currentDifficulty = 'nonsense'; // 난이도에 임시 값 설정
             } else {
-                // 💡 [MODIFIED] 수학 과목 선택 시 난이도 선택 UI 표시
+                // 💡 수학 과목 선택 시 난이도 선택 UI 표시
                 const hardBtn = document.querySelector('.difficulty-btn[data-difficulty="hard"]');
                 
+                // problems.json을 기준으로 하드 난이도 유무에 따라 버튼 표시 제어 필요
+                // 임시로 BASIC_STAGE_SUBJECTS에 해당하는지 확인하는 로직 유지
                 if (BASIC_STAGE_SUBJECTS.includes(currentSubject)) {
                     hardBtn.style.display = 'none';
                 } else {
@@ -446,7 +456,6 @@ function setupMainUiEvents() {
             if (!isTeacher) return;
             
             currentQuizNumber = e.target.dataset.quizNumber;
-            // 넌센스 퀴즈는 난이도 대신 문제 번호를 서버에 전달하거나, 문제 ID로 사용합니다.
             
             loadNewQuiz();
         });
@@ -540,9 +549,7 @@ function syncQuizScreen(problem) {
     
     problemImage.src = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
     
-    canvasP1.width = CANVAS_WIDTH; canvasP1.height = CANVAS_HEIGHT;
-    canvasP2.width = CANVAS_WIDTH; canvasP2.height = CANVAS_HEIGHT;
-
+    // setupQuizView 내에서 캔버스 크기 재설정
     setupQuizView(); 
 }
 
@@ -611,7 +618,7 @@ function startQuizTimer(mode) {
 
 
 // =========================================================
-// 5. 채점 및 효과 로직 (생략, 이전과 동일)
+// 5. 채점 및 효과 로직
 // =========================================================
 
 function setupScoringEvents() {
@@ -704,7 +711,7 @@ function setupWebSocket() {
                     setupCanvasContext(ctxP1); 
                     setupCanvasContext(ctxP2); 
                     
-                    // 💡 [MODIFIED] 학생 클라이언트에서도 난이도/넌센스 정보를 이용해 타이머 시작
+                    // 💡 학생 클라이언트에서도 난이도/넌센스 정보를 이용해 타이머 시작
                     const timerMode = currentSubject === NONSENSE_SUBJECT ? NONSENSE_SUBJECT : currentDifficulty;
                     startQuizTimer(timerMode); 
                 }
@@ -731,7 +738,7 @@ function sendWebSocketData(data) {
 
 
 // =========================================================
-// 7. 초기화 (생략, 이전과 동일)
+// 7. 초기화
 // =========================================================
 
 window.onload = async () => {
