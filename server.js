@@ -4,7 +4,7 @@ const WebSocket = require('ws');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
-const url = require('url'); // 💡 URL 파싱을 위해 필요
+const url = require('url');
 
 const PORT = process.env.PORT || 8080;
 
@@ -12,6 +12,8 @@ const PORT = process.env.PORT || 8080;
 const problemsData = JSON.parse(fs.readFileSync(path.join(__dirname, 'problems.json'), 'utf8'));
 // 💡 2. 출제된 문제를 기록할 변수
 const solvedProblems = {}; 
+// 💡 넌센스 퀴즈 상수
+const NONSENSE_SUBJECT = 'nonsense';
 
 // 1. HTTP 서버 설정 (파일 제공 및 API 처리 역할)
 const server = http.createServer((req, res) => {
@@ -20,48 +22,77 @@ const server = http.createServer((req, res) => {
     const parsedUrl = url.parse(req.url); 
     let pathname = parsedUrl.pathname;
 
-    // 💡 퀴즈 요청 처리 API 경로 (/api/quiz/주제/난이도) (생략 가능)
+    // 💡 퀴즈 요청 처리 API 경로 (/api/quiz/주제/식별자)
     if (pathname.startsWith('/api/quiz/')) {
-        // ... (API 로직 유지)
         const parts = pathname.split('/'); 
-        const subject = parts[3]; 
-        const difficulty = parts[4];
+        const subject = parts[3];       // 예: 'polynomial' 또는 'nonsense'
+        const identifier = parts[4];    // 예: 'easy' 또는 '1' (문제 번호)
         
-        if (problemsData[subject] && problemsData[subject][difficulty]) {
+        let problemToSend;
+        let statusCode = 200;
+        let errorMessage = null;
+
+        if (subject === NONSENSE_SUBJECT) {
+            // ------------------------------------------------
+            // 💡 넌센스 퀴즈 로직 (identifier = 문제 번호)
+            // ------------------------------------------------
+            const quizNumber = parseInt(identifier);
+            const nonsenseQuizzes = problemsData[NONSENSE_SUBJECT]?.quizzes;
+            
+            if (nonsenseQuizzes && quizNumber >= 1 && quizNumber <= nonsenseQuizzes.length) {
+                // 문제 번호는 1부터 시작, 배열은 0부터 시작
+                problemToSend = nonsenseQuizzes[quizNumber - 1];
+            } else {
+                statusCode = 400;
+                errorMessage = '잘못된 넌센스 문제 번호입니다.';
+            }
+
+        } else if (problemsData[subject] && problemsData[subject][identifier]) {
+            // ------------------------------------------------
+            // 💡 수학 퀴즈 로직 (identifier = 난이도)
+            // ------------------------------------------------
+            const difficulty = identifier;
             const problemList = problemsData[subject][difficulty];
             const key = `${subject}-${difficulty}`;
             const publishedIds = solvedProblems[key] || [];
             let availableProblems = problemList.filter(p => !publishedIds.includes(p.id));
 
-            let nextProblem;
             if (availableProblems.length === 0 && problemList.length > 0) {
+                // 모든 문제를 출제했다면 초기화
                 solvedProblems[key] = [];
                 availableProblems = problemList;
             } 
             
             if (availableProblems.length > 0) {
                 const randomIndex = Math.floor(Math.random() * availableProblems.length);
-                nextProblem = availableProblems[randomIndex];
+                problemToSend = availableProblems[randomIndex];
+                
                 if (!solvedProblems[key]) solvedProblems[key] = [];
-                solvedProblems[key].push(nextProblem.id);
+                solvedProblems[key].push(problemToSend.id);
             } else {
-                 res.writeHead(404, { 'Content-Type': 'application/json' });
-                 res.end(JSON.stringify({ error: '해당 난이도에는 문제가 등록되지 않았습니다.' }));
-                 return;
+                statusCode = 404;
+                errorMessage = '해당 난이도에는 문제가 등록되지 않았습니다.';
             }
-            
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify(nextProblem));
-            return;
         } else {
-            res.writeHead(404, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: '잘못된 주제 또는 난이도입니다.' }));
-            return;
+            // ------------------------------------------------
+            // 💡 잘못된 주제 또는 난이도 처리
+            // ------------------------------------------------
+            statusCode = 404;
+            errorMessage = '잘못된 주제 또는 난이도입니다.';
         }
+        
+        // 최종 응답
+        res.writeHead(statusCode, { 'Content-Type': 'application/json' });
+        if (errorMessage) {
+            res.end(JSON.stringify({ error: errorMessage }));
+        } else {
+            res.end(JSON.stringify(problemToSend));
+        }
+        return;
     }
     
     // 3. 정적 파일 제공 로직 (HTML, CSS, JS, 이미지 파일 포함)
-    let filePath = '.' + pathname; // 💡 쿼리 문자열이 제거된 pathname 사용 (예: ./images/characters/soldier.png)
+    let filePath = '.' + pathname; // 💡 쿼리 문자열이 제거된 pathname 사용
     if (filePath === './') {
         filePath = './index.html';
     }
