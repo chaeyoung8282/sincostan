@@ -273,7 +273,12 @@
             { "id": "n-2", "url": "/images/nonsense/problem_2.png" },
             { "id": "n-3", "url": "/images/nonsense/problem_3.png" },
             { "id": "n-4", "url": "/images/nonsense/problem_4.png" },
-            { "id": "n-5", "url": "/images/nonsense/problem_5.png" }
+            { "id": "n-5", "url": "/images/nonsense/problem_5.png" },
+            { "id": "n-6", "url": "/images/nonsense/problem_6.png" },
+            { "id": "n-7", "url": "/images/nonsense/problem_7.png" },
+            { "id": "n-8", "url": "/images/nonsense/problem_8.png" },
+            { "id": "n-9", "url": "/images/nonsense/problem_9.png" },
+            { "id": "n-10", "url": "/images/nonsense/problem_10.png" }
         ]
     }
 }
